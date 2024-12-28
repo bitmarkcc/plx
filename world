@@ -1,0 +1,25 @@
+#app-admin/localepurge # to clear space after install. Doesn't exist anymore
+app-admin/syslog-ng
+media-fonts/terminus-font
+app-portage/gentoolkit
+media-gfx/gimp
+media-gfx/zbar
+#media-libs/libtxc_dxtn # not available anymore. Needed?
+media-libs/libv4l
+media-sound/alsa-utils
+media-video/mpv # mplayer fork, since mplayer not well maintained now
+net-misc/ntp
+#net-print/splix # masked
+sys-apps/lm-sensors
+#sys-apps/piratepack #tmp disable
+#sys-apps/usb_modeswitch # masked
+sys-apps/usbutils
+sys-fs/cryptsetup
+#sys-kernel/linux-firmware
+#sys-libs/gpm
+www-client/firefox
+x11-base/xorg-drivers
+#x11-libs/gtk+:2
+x11-terms/xterm # comes with X?
+x11-wm/openbox
+x11-misc/xscreensaver

@@ -1,0 +1,7 @@
+Xft.dpi: 141
+xterm*faceName: Terminus
+xterm*.initialFont: 7
+xterm*background: black
+xterm*foreground: white
+xterm.*backarrowKey: false
+xterm*.toolBar: false
