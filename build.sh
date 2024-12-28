@@ -8,7 +8,7 @@ busyboxver="1_36_1"
 stage3ver="20241215T231830Z"
 snapshotver="20241222"
 KERNEL="kernel8" # kernel_2712 for raspi5
-installinchroot=1 # 1 if you will run install.sh in a chroot
+installinchroot=0 # 1 if you will run install.sh in a chroot
 
 njobs="`nproc`"
 if [ ! -z "$1" ]
@@ -359,6 +359,10 @@ unprepare_for_chroot() {
     echo "Chroot preparations undone"
 }
 
+finalize_disk_image() {
+    #todo
+}
+
 clean() {
     echo "Cleaning PLX build files ..."
     asuser rm -rf "initramfs.cpio.gz"
@@ -467,7 +471,7 @@ install_initramfs() {
     echo "Installed initramfs"
 }
 
-testit() {
+main() {
     download_files
     prepare_disk_image
     install_firmware
@@ -481,12 +485,4 @@ testit() {
     finalize_root_fs
 }
 
-#testit
-
-install_initramfs
-#download_files
-#prepare_for_chroot
-#clear_root_fs
-#finalize_root_fs
-#testit
-#clean
+main
