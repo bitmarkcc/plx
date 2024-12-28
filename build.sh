@@ -360,7 +360,13 @@ unprepare_for_chroot() {
 }
 
 finalize_disk_image() {
-    #todo
+    echo "Finalizing disk image ..."
+    unprepare_for_chroot
+    diskfile="`cat diskfile | tr -d '\n'`"
+    loopdev="`cat loopdev | tr -d '\n'`"
+    mountpoint="/mnt/$diskfile"p2
+    losetup -d "loopdev"
+    asuser xz "$diskfile"
 }
 
 clean() {
@@ -388,6 +394,10 @@ clean() {
 	    asuser rm loopdev
 	fi
 	asuser rm "$diskfile"
+	if [ -e "$diskfile.xz" ]
+	then
+	    asuser rm "$diskfile.xz"
+	fi
 	asuser rm diskfile
     fi
     if [ -e portage.auto ]
@@ -483,6 +493,7 @@ main() {
     get_distfiles_and_autounmasking
     clear_root_fs
     finalize_root_fs
+    finalize_disk_image
 }
 
 main
