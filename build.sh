@@ -146,7 +146,7 @@ install_kernel() {
     cp arch/arm64/boot/dts/overlays/README /mnt/"$diskfile"p1/overlays/
     umount "/mnt/$diskfile"p1
     cd ..
-    ususer rm -r "linux-stable_$kernelver"
+    asuser rm -r "linux-stable_$kernelver"
     echo "Installed kernel"
 }
 
@@ -420,7 +420,7 @@ rebuild_toolchain() { #not tested
 
 install_initramfs() {
 
-    echo "Install initramfs ..."
+    echo "Installing initramfs ..."
 
     if [ -e initramfs.cpio.gz ]
     then
