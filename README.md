@@ -4,6 +4,16 @@ This is a continuation of Pirate Linux (https://gitub.com/piratelinux/Pirate-Lin
 
 Currently designed only for Raspberry Pi. This first commit only builds a 'vanilla' Gentoo desktop system. Extra packages are coming soon.
 
+# Prerequisites
+
+- Standard Linux toolset (binutils), xz, tar, mount, umount, ...
+- chroot (and root access)
+- parted
+- cpio
+- Internet connection with /etc/resolv.conf available (to downloaded sources)
+- sudo
+- mkfs.ext4, mkfs.vfat
+
 # build.sh
 This is the main script that builds the system. You can easily configure some basic variables/parameters at the top. Run it as root (sudo ./build.sh). The parts that don't need root privileges will be run as the regular user.
 
