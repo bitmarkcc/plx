@@ -15,7 +15,7 @@ Currently designed only for Raspberry Pi. This first commit only builds a 'vanil
 - mkfs.ext4, mkfs.vfat
 
 # build.sh
-This is the main script that builds the system. You can easily configure some basic variables/parameters at the top. Run it as root (sudo ./build.sh). The parts that don't need root privileges will be run as the regular user.
+This is the main script that builds the system. You can easily configure some basic variables/parameters at the top. Run it as root (`sudo ./build.sh`). The parts that don't need root privileges will be run as the regular user. The first argument is the number of parallel jobs (`nproc` by default).
 
 # install.sh
 This is meant to run inside the target system. You can also run this in a chroot. If you do so, you should set installinchroot=1 (in build.sh).
