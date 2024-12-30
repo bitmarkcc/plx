@@ -236,6 +236,8 @@ finalize_root_fs() {
     cp "gentoo-$snapshotver.tar.xz" "$mountpoint/root/tmp/"
     cp -r home "$mountpoint/root/tmp/"
     cp hostname "$mountpoint/etc/"
+    chmod +x init.d/*
+    cp -r "--preserve=mode" init.d/* "$mountpoint/etc/init.d/"
     cp install.sh "$mountpoint/root/tmp/"
     chmod +x "$mountpoint/root/tmp/install.sh"
     sed -i 's/$snapshotver/'"$snapshotver"'/g' "$mountpoint/root/tmp/install.sh"
@@ -244,6 +246,8 @@ finalize_root_fs() {
 	sed -i 's/chroot=0/chroot=1/' "$mountpoint/root/tmp/install.sh"
     fi
     cp inittab "$mountpoint/etc/"
+    chmod +x *.start
+    cp "--preserve=mode" staticip.start "$mountpoint/etc/local.d/"
     if [ -e portage.auto/env ]
     then
 	cp -r portage.auto/env "$mountpoint/etc/portage/"

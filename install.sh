@@ -9,6 +9,10 @@ then
     . /etc/profile
 fi
 date -s "$date"
+rc-update add swclock-helper default
+rc-service swclock-helper start
+rc-update add local default
+rc-service local start
 rc-update add sshd default
 rc-service sshd start
 tar xpf "/root/tmp/gentoo-$snapshotver.tar.xz" -C /var/db/repos/

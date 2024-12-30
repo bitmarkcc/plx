@@ -1,0 +1,9 @@
+#!/sbin/openrc-run
+
+name="swclock-helper"
+description="updates swclock_file every minute"
+command="/usr/local/bin/swclock-helper.sh"
+command_background=true
+pidfile="/run/${RC_SVCNAME}.pid"
+output_log="/var/log/${RC_SVCNAME}.log"
+error_log="/var/log/${RC_SVCNAME}.err"
