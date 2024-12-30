@@ -269,6 +269,14 @@ finalize_root_fs() {
     then
 	cp portage.auto/package.use/* "$mountpoint/etc/portage/package.use/"
     fi
+    pw="$diskfile"
+    echo "root:$pw" > "$mountpoint/root/tmp/"
+    sed -i 's/^#PasswordAuthentication .*$/PasswordAuthentication no/' "$mountpoint/etc/ssh/sshd_config"
+    if [ -e id_rsa.pub ]
+    then
+	mkdir -p "$mountpoint/root/.ssh"
+	cat id_rsa.pub >> "$mountpoint/root/.ssh/authorized_keys"
+    fi
     echo "UTC" > "$mountpoint/etc/timezone"
     cp world "$mountpoint/var/lib/portage/"
     sed -i 's/$date/'"`date`"'/g' "$mountpoint/root/tmp/install.sh"

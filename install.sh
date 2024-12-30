@@ -9,6 +9,7 @@ then
     . /etc/profile
 fi
 date -s "$date"
+rc-update add sshd default
 rc-service sshd start
 tar xpf "/root/tmp/gentoo-$snapshotver.tar.xz" -C /var/db/repos/
 mv "/var/db/repos/gentoo-$snapshotver" /var/db/repos/gentoo
@@ -19,7 +20,8 @@ locale-gen
 eselect locale set "en_US.utf8"
 env-update
 . /etc/profile
-passwd -d root
+cat /root/tmp/pw | chpasswd
+rm pw
 sed -i 's/terminus-font X/terminus-font/' /etc/portage/package.use/plx
 emerge -q1 media-fonts/terminus-font
 sed -i 's/^consolefont=.*$/consolefont="ter-u32n"/' /etc/conf.d/consolefont
@@ -33,6 +35,7 @@ fi
 emerge -q1 app-admin/syslog-ng
 rc-update add syslog-ng default
 useradd -m -G users,audio -s /bin/bash guest
+sed -i 's/-a root/-a guest/' /etc/inittab
 sed -i 's/terminus-font/terminus-font X/' /etc/portage/package.use/plx
 
 if [[ "$chroot" == "0" ]]
@@ -63,6 +66,10 @@ then
     mkdir /var/cache/distfiles
     mount "$mmc"p5 /var/cache/distfiles
     mount "$mmc"p6 /home
+    sed -i 's|^#/dev/mmcblk0p3|/dev/mmcblk0p3|'
+    sed -i 's|^#/dev/mmcblk0p4|/dev/mmcblk0p4|'
+    sed -i 's|^#/dev/mmcblk0p5|/dev/mmcblk0p5|'
+    sed -i 's|^#/dev/mmcblk0p6|/dev/mmcblk0p6|'
     echo "Done partitioning"
 fi
 
