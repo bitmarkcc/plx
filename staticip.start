@@ -1,2 +1,2 @@
 #!/bin/bash
-ip a add 192.168.6.67/24 brd + dev eth0
+ip a add 192.168.6.66/24 brd + dev eth0

@@ -21,4 +21,10 @@ This is the main script that builds the system. You can easily configure some ba
 This is meant to run inside the target system. You can also run this in a chroot. If you do so, you should set installinchroot=1 (in build.sh).
 
 # init.sh
-This runs inside the initramfs (before mounting the root filesystem)
+This runs inside the initramfs (before mounting the root filesystem).
+
+# ssh access
+For ssh access, add your id_rsa.pub to the root directory when building.
+
+# root password
+The root password is the name of the generated image file, of the form `plx<random>.img` where `<random>` is an 8 character random base64 string (alphanum + `_-+`).
