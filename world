@@ -23,3 +23,4 @@ x11-base/xorg-drivers
 x11-terms/xterm # comes with X?
 x11-wm/openbox
 x11-misc/xscreensaver
+sys-block/parted

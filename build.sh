@@ -271,6 +271,7 @@ finalize_root_fs() {
     fi
     echo "UTC" > "$mountpoint/etc/timezone"
     cp world "$mountpoint/var/lib/portage/"
+    sed -i 's/$date/'"`date`"'/g' "$mountpoint/root/tmp/install.sh"
     umount "$mountpoint"
     echo "Finalized root filesystem"
 }
@@ -289,6 +290,7 @@ clear_root_fs() {
     then
 	umount "$mountpoint"
     fi
+    sleep 3
     mkfs.ext4 -F "$loopdev"p2
     echo "Cleared root filesystem"
 }
@@ -365,8 +367,9 @@ finalize_disk_image() {
     diskfile="`cat diskfile | tr -d '\n'`"
     loopdev="`cat loopdev | tr -d '\n'`"
     mountpoint="/mnt/$diskfile"p2
-    losetup -d "loopdev"
-    asuser xz "$diskfile"
+    losetup -d "$loopdev"
+    asuser xz -k "$diskfile"
+    echo "Finalized disk image"
 }
 
 clean() {
@@ -418,9 +421,9 @@ rebuild_toolchain() { #not tested
     rm source/root/tmp/toolchain.sh
 }
 
-install_initramfs() {
+build_initramfs() {
 
-    echo "Installing initramfs ..."
+    echo "Building initramfs ..."
 
     if [ -e initramfs.cpio.gz ]
     then
@@ -458,9 +461,16 @@ install_initramfs() {
     asuser make -j"$njobs"
     #make install
     cd ../
+    
     asuser ldd "busybox-$busyboxver/busybox" | sudo -u "$user" awk '{ for(i = 1; i <= NF; i++) { if($i~/[/].*[.]so/)print $i; } }' | xargs sudo -u "$user" dirname | xargs -t -I '{}' sudo -u "$user" mkdir -p initramfs'{}'
     asuser ldd "busybox-$busyboxver/busybox" | sudo -u "$user" awk '{ for(i = 1; i <= NF; i++) { if($i~/[/].*[.]so/)print $i; } }' | xargs -t -I '{}' sudo -u "$user" cp '{}' initramfs'{}'
-    asuser cp "busybox-$busyboxver/busybox initramfs/bin/"
+    asuser cp "busybox-$busyboxver/busybox" initramfs/bin/
+    
+    fsckpath="`which e2fsck`"
+    asuser ldd "$fsckpath" | sudo -u "$user" awk '{ for(i = 1; i <= NF; i++) { if($i~/[/].*[.]so/)print $i; } }' | xargs sudo -u "$user" dirname | xargs -t -I '{}' sudo -u "$user" mkdir -p initramfs'{}'
+    asuser ldd "$fsckpath" | sudo -u "$user" awk '{ for(i = 1; i <= NF; i++) { if($i~/[/].*[.]so/)print $i; } }' | xargs -t -I '{}' sudo -u "$user" cp '{}' initramfs'{}'
+    asuser cp -L "$fsckpath" initramfs/usr/bin/e2fsck
+    
     asuser rm -r "busybox-$busyboxver"
     asuser cp init.sh initramfs/init
     asuser chmod +x initramfs/init
@@ -468,6 +478,16 @@ install_initramfs() {
     cd initramfs
     asuser find . -print0 | asuser cpio --null -ov --format=newc | asuser gzip -9 | asuser tee ../initramfs.cpio.gz >> /dev/null
     cd ..
+
+    echo "Built initramfs"
+}
+
+install_initramfs() {
+
+    echo "Installing initramfs ..."
+    
+    build_initramfs
+
     #asuser rm -r initramfs #tmp don't delete
     diskfile="`cat diskfile | tr -d '\n'`"
     loopdev="`cat loopdev | tr -d '\n'`"
@@ -496,4 +516,5 @@ main() {
     finalize_disk_image
 }
 
-main
+#main
+build_initramfs

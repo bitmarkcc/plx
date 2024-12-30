@@ -4,7 +4,12 @@ set -e
 
 chroot=0
 
-. /etc/profile
+if [[ "$chroot" == "1" ]]
+then
+    . /etc/profile
+fi
+date -s "$date"
+rc-service sshd start
 tar xpf "/root/tmp/gentoo-$snapshotver.tar.xz" -C /var/db/repos/
 mv "/var/db/repos/gentoo-$snapshotver" /var/db/repos/gentoo
 eselect profile list

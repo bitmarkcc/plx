@@ -12,7 +12,17 @@ mount -t sysfs none /sys
 mount -t devtmpfs none /dev
 
 echo "Checking root filesystem ..."
-e2fsck -fp /dev/mmcblk0p2 || rescue_shell
+rootdev="/dev/mmcblk0p2"
+haverootdev=0
+while [[ "$haverootdev" == "0" ]]
+do
+    sleep 1
+    if [ -e "$rootdev" ]
+    then
+	/usr/bin/e2fsck -fp "$rootdev"
+	haverootdev=1
+    fi
+done
 echo "Successfully checked root filesystem"
 
 mkdir /mnt/root
