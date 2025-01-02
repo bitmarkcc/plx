@@ -53,7 +53,7 @@ download_files() {
     if [ ! -f "$stage3file" ]
     then
 	echo "Downloading stage3 tarball ..."
-	asuser curl -L "https://distfiles.gentoo.org/releases/arm64/autobuilds/$stage3ver/$stage3file" -o "$stage3file"
+	asuser curl -L "https://plx.im/gentoo/$stage3file" -o "$stage3file"
     fi
     if ! sha512sum -c "$stage3file.SHA512"
     then
@@ -64,7 +64,7 @@ download_files() {
     if [ ! -f "$snapshotfile" ]
     then
 	echo "Downloading gentoo snapshot ..."
-	asuser curl -L "https://distfiles.gentoo.org/snapshots/$snapshotfile" -o "$snapshotfile"
+	asuser curl -L "https://plx.im/gentoo/$snapshotfile" -o "$snapshotfile"
     fi
     if ! sha512sum -c "$snapshotfile.SHA512"
     then
