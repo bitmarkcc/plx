@@ -546,7 +546,7 @@ main() {
     then
 	prepare_for_chroot
 	diskfile="`cat diskfile | tr -d '\n'`"
-	mountpoint="/mnt/$diskfile"p1
+	mountpoint="/mnt/$diskfile"p2
 	chroot "$mountpoint" /root/tmp/install.sh
     fi
     finalize_disk_image
