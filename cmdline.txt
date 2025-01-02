@@ -1,1 +1,1 @@
-dwc_otg.lpm_enable=0 console=tty root=/dev/mmcblk0p2 rootfstype=ext4 rootwait cma=256M@256M net.ifnames=0
+dwc_otg.lpm_enable=0 console=tty root=/dev/mmcblk0p2 rootfstype=ext4 rootwait cma=256M@256M net.ifnames=0 fbcon=font:TER16x32

@@ -42,6 +42,13 @@ useradd -m -G users,audio -s /bin/bash guest
 sed -i 's/-a root/-a guest/' /etc/inittab
 sed -i 's/terminus-font/terminus-font X/' /etc/portage/package.use/plx
 
+gpg --import /root/tmp/plx-pgp.asc
+emerge -q1 app-eselect/eselect-repository
+eselect repository add plx git https://github.com/bitmarkcc/plx-overlay
+emaint sync -r plx
+cd /var/db/repos/plx/app-misc/cwallet
+gpg --verify Manifest
+
 if [[ "$chroot" == "0" ]]
 then
     echo "Partitioning ..."
@@ -122,6 +129,7 @@ cd
 chown -R guest:guest /home/guest
 chmod o-rwx /home/guest
 rm -r /root/tmp
+sed 's|/root/tmp/install.sh||' /root/.bash_profile
 if [[ "$chroot" == "0" ]]
 then
     reboot

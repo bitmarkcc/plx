@@ -2,3 +2,6 @@ www-client/firefox X clang
 media-fonts/terminus-font X
 x11-misc/xscreensaver -jpeg
 x11-libs/gtk+:3 X
+net-irc/irssi otr
+x11-libs/wxGTK -spell
+net-p2p/bitcoin-core -qrcode

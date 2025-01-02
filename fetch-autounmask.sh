@@ -15,4 +15,12 @@ eselect locale set "en_US.utf8"
 env-update
 . /etc/profile
 #passwd -d root
+
+gpg --import /root/tmp/plx-pgp.asc
+emerge -q1 app-eselect/eselect-repository
+eselect repository add plx git https://github.com/bitmarkcc/plx-overlay
+emaint sync -r plx
+cd /var/db/repos/plx/app-misc/cwallet
+gpg --verify Manifest
+
 emerge -fq --update --deep --newuse --autounmask-continue @world

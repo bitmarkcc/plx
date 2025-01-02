@@ -13,7 +13,12 @@ installinchroot=0 # 1 if you will run install.sh in a chroot
 njobs="`nproc`"
 if [ ! -z "$1" ]
 then
-    njobs="$1"
+    if [[ "$1" == "clean" ]]
+    then
+	clean
+    else
+	njobs="$1"
+    fi
 fi
 
 user="`logname`"
@@ -134,6 +139,8 @@ install_kernel() {
     then
 	asuser make bcm2712_defconfig
     fi
+    sed 's/^# CONFIG_FONTS is not set/CONFIG_FONTS=y\nCONFIG_FONT_TER16x32=y/' .config | asuser tee .config.tmp >> /dev/null
+    sed 's/^CONFIG_FONT_8x8=y/# CONFIG_FONT_8x8 is not set/' .config.tmp | asuser tee .config >> /dev/null
     asuser make -j"$njobs" Image.gz dtbs # modules only needed for wifi, I think
     diskfile="`cat ../diskfile | tr -d '\n'`"
     loopdev="`cat ../loopdev | tr -d '\n'`"
@@ -164,6 +171,7 @@ install_stage3() {
     mkdir "$mountpoint/root/tmp"
     cp "gentoo-$snapshotver.tar.xz" "$mountpoint/root/tmp/"
     cp hostname "$mountpoint/etc/"
+    cp plx-pgp.asc "$mountpoint/root/tmp/"
     if [ -e portage/env ]
     then
 	cp -r portage/env "$mountpoint/etc/portage/"
@@ -175,11 +183,11 @@ install_stage3() {
     fi
     if [ -e portage/package.env ]
     then
-	cp portage/package.env "$mountpoint/etc/portage/"
+	cp -rT portage/package.env "$mountpoint/etc/portage/package.env"
     fi
     if [ -e portage/package.license ]
     then
-	cp portage/package.license "$mountpoint/etc/portage/"
+	cp -rT portage/package.license "$mountpoint/etc/portage/package.license"
     fi
     if [ -e portage/package.mask ]
     then
@@ -188,6 +196,10 @@ install_stage3() {
     if [ -e portage/package.use ]
     then
 	cp portage/package.use/* "$mountpoint/etc/portage/package.use/"
+    fi
+    if [ -e portage/repos.conf ]
+    then
+	cp -rT portage/repos.conf "$mountpoint/etc/portage/repos.conf"
     fi
     echo "UTC" > "$mountpoint/etc/timezone"
     cp world "$mountpoint/var/lib/portage/"
@@ -209,7 +221,7 @@ get_distfiles_and_autounmasking() {
 	rm -r distfiles
     fi
     asuser mkdir distfiles
-    asuser cp "--preserve=mode,timestamps" "$mountpoint/var/cache/distfiles/"* distfiles
+    asuser cp "--preserve=mode,timestamps" "$mountpoint/var/cache/distfiles/"* distfiles/
     if [ -e portage.auto ]
     then
 	rm -r portage.auto
@@ -230,8 +242,9 @@ finalize_root_fs() {
     fi
     tar xpf "stage3-arm64-openrc-$stage3ver.tar.xz" --xattrs-include='*.*' --numeric-owner -C "$mountpoint"
     mkdir "$mountpoint/root/tmp"
+    echo "/root/tmp/install.sh" > "$mountpoint/root/.bash_profile"
     cp cupsd.conf "$mountpoint/root/tmp/"
-    cp -r "--preserve=mode,timestamps" distfiles/* "$mountpoint/var/cache/distfiles/"
+    cp "--preserve=mode,timestamps" distfiles/* "$mountpoint/var/cache/distfiles/"
     cp fstab "$mountpoint/etc/"
     cp "gentoo-$snapshotver.tar.xz" "$mountpoint/root/tmp/"
     cp -r home "$mountpoint/root/tmp/"
@@ -248,6 +261,7 @@ finalize_root_fs() {
     cp inittab "$mountpoint/etc/"
     chmod +x *.start
     cp "--preserve=mode" staticip.start "$mountpoint/etc/local.d/"
+    cp plx-pgp.asc "$mountpoint/root/tmp/"
     if [ -e portage.auto/env ]
     then
 	cp -r portage.auto/env "$mountpoint/etc/portage/"
@@ -259,11 +273,11 @@ finalize_root_fs() {
     fi
     if [ -e portage.auto/package.env ]
     then
-	cp portage.auto/package.env "$mountpoint/etc/portage/"
+	cp -rT portage.auto/package.env "$mountpoint/etc/portage/package.env"
     fi
     if [ -e portage.auto/package.license ]
     then
-	cp portage.auto/package.license "$mountpoint/etc/portage/"
+	cp -rT portage.auto/package.license "$mountpoint/etc/portage/package.license"
     fi
     if [ -e portage.auto/package.mask ]
     then
@@ -273,8 +287,12 @@ finalize_root_fs() {
     then
 	cp portage.auto/package.use/* "$mountpoint/etc/portage/package.use/"
     fi
+    if [ -e portage.auto/repos.conf ]
+    then
+	cp -rT portage.auto/repos.conf "$mountpoint/etc/portage/repos.conf"
+    fi
     pw="$diskfile"
-    echo "root:$pw" > "$mountpoint/root/tmp/"
+    echo "root:$pw" > "$mountpoint/root/tmp/pw"
     sed -i 's/^#PasswordAuthentication .*$/PasswordAuthentication no/' "$mountpoint/etc/ssh/sshd_config"
     if [ -e id_rsa.pub ]
     then
@@ -380,7 +398,7 @@ finalize_disk_image() {
     loopdev="`cat loopdev | tr -d '\n'`"
     mountpoint="/mnt/$diskfile"p2
     losetup -d "$loopdev"
-    asuser xz -k "$diskfile"
+    #asuser xz -k "$diskfile"
     echo "Finalized disk image"
 }
 
@@ -405,7 +423,9 @@ clean() {
 	if [ -e loopdev ]
 	then
 	    loopdev="`cat loopdev | tr -d '\n'`"
+	    set +e
 	    losetup -d "$loopdev"
+	    set -e
 	    asuser rm loopdev
 	fi
 	asuser rm "$diskfile"
@@ -514,19 +534,19 @@ install_initramfs() {
 }
 
 main() {
-    download_files
-    prepare_disk_image
-    install_firmware
+#    download_files
+#    prepare_disk_image
+#    install_firmware
     install_kernel
-    install_initramfs
-    clear_root_fs
-    install_stage3
-    prepare_for_chroot
-    get_distfiles_and_autounmasking
-    clear_root_fs
-    finalize_root_fs
-    finalize_disk_image
+#    install_initramfs
+#    clear_root_fs
+#    install_stage3
+#    prepare_for_chroot
+#    get_distfiles_and_autounmasking
+#    clear_root_fs
+#    finalize_root_fs
+#    finalize_disk_image
 }
 
-#main
-build_initramfs
+main
+# sudo fuser -km /dev/loop0p2 (if clear_root_fs is blocked)
