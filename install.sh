@@ -50,7 +50,9 @@ sed -i 's/terminus-font/terminus-font X/' /etc/portage/package.use/plx
 
 gpg --import /root/tmp/plx-pgp.asc
 emerge -q1 app-eselect/eselect-repository
+set +e
 eselect repository add plx git https://github.com/bitmarkcc/plx-overlay
+set -e
 emaint sync -r plx
 cd /var/db/repos/plx/app-misc/cwallet
 gpg --verify Manifest
