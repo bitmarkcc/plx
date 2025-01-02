@@ -139,8 +139,11 @@ install_kernel() {
     then
 	asuser make bcm2712_defconfig
     fi
-    sed 's/^# CONFIG_FONTS is not set/CONFIG_FONTS=y\nCONFIG_FONT_TER16x32=y/' .config | asuser tee .config.tmp >> /dev/null
+    ./scripts/config --set-val CONFIG_FONTS y
+    asuser make olddefconfig
+    sed 's/^# CONFIG_FONT_TER16x32 is not set/CONFIG_FONT_TER16x32=y/' .config | asuser tee .config.tmp >> /dev/null
     sed 's/^CONFIG_FONT_8x8=y/# CONFIG_FONT_8x8 is not set/' .config.tmp | asuser tee .config >> /dev/null
+    rm .config.tmp
     asuser make -j"$njobs" Image.gz dtbs # modules only needed for wifi, I think
     diskfile="`cat ../diskfile | tr -d '\n'`"
     loopdev="`cat ../loopdev | tr -d '\n'`"
