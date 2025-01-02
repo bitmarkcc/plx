@@ -10,11 +10,17 @@ then
 fi
 date -s "$date"
 rc-update add swclock-helper default
+set +e
 rc-service swclock-helper start
+set -e
 rc-update add local default
+set +e
 rc-service local start
+set -e
 rc-update add sshd default
+set +e
 rc-service sshd start
+set -e
 tar xpf "/root/tmp/gentoo-$snapshotver.tar.xz" -C /var/db/repos/
 mv "/var/db/repos/gentoo-$snapshotver" /var/db/repos/gentoo
 eselect profile list
@@ -25,7 +31,7 @@ eselect locale set "en_US.utf8"
 env-update
 . /etc/profile
 cat /root/tmp/pw | chpasswd
-rm pw
+rm /root/tmp/pw
 sed -i 's/terminus-font X/terminus-font/' /etc/portage/package.use/plx
 emerge -q1 media-fonts/terminus-font
 sed -i 's/^consolefont=.*$/consolefont="ter-u32n"/' /etc/conf.d/consolefont

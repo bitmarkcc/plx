@@ -5,23 +5,10 @@ set -e
 firmwarever="1.20241126"
 kernelver="20241008"
 busyboxver="1_36_1"
-stage3ver="20241215T231830Z"
-snapshotver="20241222"
+stage3ver="20241230T163322Z"
+snapshotver="20250101"
 KERNEL="kernel8" # kernel_2712 for raspi5
 installinchroot=0 # 1 if you will run install.sh in a chroot
-
-njobs="`nproc`"
-if [ ! -z "$1" ]
-then
-    if [[ "$1" == "clean" ]]
-    then
-	clean
-    else
-	njobs="$1"
-    fi
-fi
-
-user="`logname`"
 
 asuser() {
     sudo -u "$user" $@
@@ -101,6 +88,7 @@ prepare_disk_image() {
     asuser parted -sa optimal "$diskfile" mkpart boot fat32 1MiB 257MiB
     asuser parted -sa optimal "$diskfile" mkpart root ext4 257MiB 100%
     loopdev="`losetup --partscan --show --find "$diskfile"`"
+    sleep 3
     mkfs.vfat "$loopdev"p1
     mkfs.ext4 "$loopdev"p2
     echo "$diskfile" | asuser tee diskfile
@@ -144,6 +132,7 @@ install_kernel() {
     sed 's/^# CONFIG_FONT_TER16x32 is not set/CONFIG_FONT_TER16x32=y/' .config | asuser tee .config.tmp >> /dev/null
     sed 's/^CONFIG_FONT_8x8=y/# CONFIG_FONT_8x8 is not set/' .config.tmp | asuser tee .config >> /dev/null
     rm .config.tmp
+    rm .config.old
     asuser make -j"$njobs" Image.gz dtbs # modules only needed for wifi, I think
     diskfile="`cat ../diskfile | tr -d '\n'`"
     loopdev="`cat ../loopdev | tr -d '\n'`"
@@ -324,7 +313,12 @@ clear_root_fs() {
 	umount "$mountpoint"
     fi
     sleep 3
-    mkfs.ext4 -F "$loopdev"p2
+    if ! mkfs.ext4 -F "$loopdev"p2
+    then
+	fuser -km "$loopdev"p2
+	sleep 3
+	mkfs.ext4 -F "$loopdev"p2
+    fi
     echo "Cleared root filesystem"
 }
 
@@ -523,7 +517,7 @@ install_initramfs() {
     
     build_initramfs
 
-    #asuser rm -r initramfs #tmp don't delete
+    asuser rm -r initramfs
     diskfile="`cat diskfile | tr -d '\n'`"
     loopdev="`cat loopdev | tr -d '\n'`"
     mountpoint="/mnt/$diskfile"p1
@@ -537,19 +531,38 @@ install_initramfs() {
 }
 
 main() {
-#    download_files
-#    prepare_disk_image
-#    install_firmware
+    download_files
+    prepare_disk_image
+    install_firmware
     install_kernel
-#    install_initramfs
-#    clear_root_fs
-#    install_stage3
-#    prepare_for_chroot
-#    get_distfiles_and_autounmasking
-#    clear_root_fs
-#    finalize_root_fs
-#    finalize_disk_image
+    install_initramfs
+    clear_root_fs
+    install_stage3
+    prepare_for_chroot
+    get_distfiles_and_autounmasking
+    clear_root_fs
+    finalize_root_fs
+    if [[ "$installinchroot" == 1 ]]
+    then
+	prepare_for_chroot
+	diskfile="`cat diskfile | tr -d '\n'`"
+	mountpoint="/mnt/$diskfile"p1
+	chroot "$mountpoint" /root/tmp/install.sh
+    fi
+    finalize_disk_image
 }
 
+njobs="`nproc`"
+user="`logname`"
+if [ ! -z "$1" ]
+then
+    if [[ "$1" == "clean" ]]
+    then
+	clean
+	exit 0
+    else
+	njobs="$1"
+    fi
+fi
+
 main
-# sudo fuser -km /dev/loop0p2 (if clear_root_fs is blocked)
