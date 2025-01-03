@@ -138,6 +138,7 @@ chown -R guest:guest /home/guest
 chmod o-rwx /home/guest
 rm -r /root/tmp/*.xz
 sed 's|/root/tmp/install.sh||' /root/.bash_profile
+touch /var/lib/misc/openrc-shutdowntime
 if [[ "$chroot" == "0" ]]
 then
     reboot

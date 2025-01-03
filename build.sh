@@ -5,6 +5,7 @@ set -e
 firmwarever="1.20241126"
 kernelver="20241008"
 busyboxver="1_36_1"
+muslver="20241230T163322Z"
 stage3ver="20241230T163322Z"
 snapshotver="20250101"
 KERNEL="kernel8" # kernel_2712 for raspi5
@@ -47,6 +48,17 @@ download_files() {
     if ! sha512sum -c "$busyboxfile.SHA512"
     then
 	echo "Invalid hash for busybox source ($busyboxfile)"
+	exit 1
+    fi
+    muslfile="stage3-arm64-musl-$muslver.tar.xz"
+    if [ ! f "$muslfile" ]
+    then
+	echo "Downloading musl stage3 source ..."
+	asuser curl -L "https://plx.im/gentoo/$muslfile" -o "$muslfile"
+    fi
+    if ! sha512sum -c "$muslfile.SHA512"
+    then
+	echo "Invalid hash for musl (stage3) source ($musfile)"
 	exit 1
     fi
     stage3file="stage3-arm64-openrc-$stage3ver.tar.xz"
@@ -352,6 +364,28 @@ prepare_for_chroot() {
     echo "Prepared for chroot"
 }
 
+prepare_for_musl_chroot() {
+    echo "Preparing for musl chroot ..."
+    mountpoint="muslroot"
+    if ! df | grep "$mountpoint/proc"
+    then
+	mount -t proc proc "$mountpoint/proc"
+    fi
+    if ! df | grep "$mountpoint/sys"
+    then
+	mount --rbind /sys "$mountpoint/sys"
+    fi
+    if ! df | grep "$mountpoint/dev"
+    then
+	mount --rbind /dev "$mountpoint/dev"
+    fi
+    if ! df | grep "$mountpoint/run"
+    then
+	mount --rbind /run "$mountpoint/run"
+    fi
+    echo "Prepared for musl chroot"
+}
+
 unprepare_for_chroot() {
     echo "Undoing chroot preparations ..."
     diskfile="`cat diskfile | tr -d '\n'`"
@@ -390,6 +424,45 @@ unprepare_for_chroot() {
 	mount -t tmpfs none /dev/shm
     fi
     echo "Chroot preparations undone"
+}
+
+unprepare_for_musl_chroot() {
+    echo "Undoing musl chroot preparations ..."
+    mountpoint="muslroot"
+    if mount | grep "$mountpoint/run"
+    then
+	umount -l "$mountpoint/run"
+    fi
+    if mount | grep "$mountpoint/dev/pts"
+    then
+	umount -l "$mountpoint/dev/pts"
+    fi
+    if mount | grep "$mountpoint/dev"
+    then
+	umount -l "$mountpoint/dev"
+    fi
+    if mount | grep "$mountpoint/sys"
+    then
+	umount -l "$mountpoint/sys"
+    fi
+    if mount | grep "$mountpoint/proc"
+    then
+	umount -l "$mountpoint/proc"
+    fi
+    if mount | grep "$mountpoint"
+    then
+	umount -l "$mountpoint"
+    fi
+    sleep 1 # todo: fix this hack
+    if ! df -a | grep "/dev/pts"
+    then
+	mount -t devpts none /dev/pts
+    fi
+    if ! df -a | grep "/dev/shm"
+    then
+	mount -t tmpfs none /dev/shm
+    fi
+    echo "Musl chroot preparations undone"
 }
 
 finalize_disk_image() {
@@ -447,14 +520,7 @@ clean() {
     echo "Cleaned PLX build files"
 }
 
-rebuild_toolchain() { #not tested
-    echo "Rebuilding toolchain ..."
-    cp toolchain.sh source/root/tmp/
-    chroot source/ /root/tmp/toolchain.sh
-    rm source/root/tmp/toolchain.sh
-}
-
-build_initramfs() {
+build_initramfs() { # inside a musl chroot
 
     echo "Building initramfs ..."
 
@@ -466,50 +532,33 @@ build_initramfs() {
     then
 	asuser rm -r initramfs
     fi
-    if [ -e "busybox-$busyboxver" ]
+    if [ -e "busybox-$busyboxver" ] # not needed anymore
     then
 	asuser rm -r "busybox-$busyboxver"
     fi
-    
-    asuser mkdir initramfs
-    asuser mkdir initramfs/root
-    asuser mkdir initramfs/etc
-    asuser mkdir initramfs/lib
-    asuser mkdir initramfs/bin
-    asuser mkdir initramfs/sbin
-    asuser mkdir -p initramfs/usr/bin
-    asuser mkdir -p initramfs/usr/sbin
-    asuser mkdir initramfs/proc
-    asuser mkdir initramfs/sys
-    asuser mkdir initramfs/dev
-    asuser mkdir initramfs/mnt
 
-    asuser tar -xf "busybox-$busyboxver.tar.gz"
-    cd "busybox-$busyboxver"
-    asuser make defconfig
-    asuser sed -i 's/^CONFIG_TC=.*$/CONFIG_TC=n/' .config
-    #sed -e 's/.*STATIC.*/CONFIG_STATIC=y/' -i .config
-    #sed -e 's/.*FEATURE_PREFER_APPLETS.*/CONFIG_FEATURE_PREFER_APPLETS=y/' -i .config
-    #sed -e 's/.*FEATURE_SH_STANDALONE.*/CONFIG_FEATURE_SH_STANDALONE=y/' -i .config
-    asuser make -j"$njobs"
-    #make install
-    cd ../
+    if [ -e muslroot ]
+    then
+	unprepare_for_musl_chroot
+	rm -r muslroot
+    fi
     
-    asuser ldd "busybox-$busyboxver/busybox" | sudo -u "$user" awk '{ for(i = 1; i <= NF; i++) { if($i~/[/].*[.]so/)print $i; } }' | xargs sudo -u "$user" dirname | xargs -t -I '{}' sudo -u "$user" mkdir -p initramfs'{}'
-    asuser ldd "busybox-$busyboxver/busybox" | sudo -u "$user" awk '{ for(i = 1; i <= NF; i++) { if($i~/[/].*[.]so/)print $i; } }' | xargs -t -I '{}' sudo -u "$user" cp '{}' initramfs'{}'
-    asuser cp "busybox-$busyboxver/busybox" initramfs/bin/
-    
-    fsckpath="`which e2fsck`"
-    asuser ldd "$fsckpath" | sudo -u "$user" awk '{ for(i = 1; i <= NF; i++) { if($i~/[/].*[.]so/)print $i; } }' | xargs sudo -u "$user" dirname | xargs -t -I '{}' sudo -u "$user" mkdir -p initramfs'{}'
-    asuser ldd "$fsckpath" | sudo -u "$user" awk '{ for(i = 1; i <= NF; i++) { if($i~/[/].*[.]so/)print $i; } }' | xargs -t -I '{}' sudo -u "$user" cp '{}' initramfs'{}'
-    asuser cp -L "$fsckpath" initramfs/usr/bin/e2fsck
-    
-    asuser rm -r "busybox-$busyboxver"
-    asuser cp init.sh initramfs/init
-    asuser chmod +x initramfs/init
+    mkdir muslroot
+    tar xpf "stage3-arm64-musl-$muslver.tar.xz" --xattrs-include='*.*' --numeric-owner -C "muslroot"
+    mkdir muslroot/root/tmp
+    cp build-initramfs.sh muslroot/root/tmp/
+    chmod +x muslroot/root/tmp/build-initramfs.sh
+    cp init.sh muslroot/root/tmp/
+    cp build-initramfs-worker.sh muslroot/root/tmp
+    cp "busybox-$busyboxver.tar.gz" muslroot/root/tmp/
+    sed -i 's/$busyboxver/'"$busyboxver"'/' muslroot/root/tmp/build-initramfs-worker.sh
+    sed -i 's/$njobs/'"$njobs"'/' muslroot/root/tmp/build-initramfs-worker.sh
+    prepare_for_musl_chroot
+    chroot muslroot /root/tmp/build-initramfs.sh
+    unprepare_for_musl_chroot
 
-    cd initramfs
-    asuser find . -print0 | asuser cpio --null -ov --format=newc | asuser gzip -9 | asuser tee ../initramfs.cpio.gz >> /dev/null
+    cd muslroot/home/worker/initramfs
+    asuser find . -print0 | asuser cpio --null -ov --format=newc | asuser gzip -9 | asuser tee ../../../../initramfs.cpio.gz >> /dev/null
     cd ..
 
     echo "Built initramfs"
@@ -521,7 +570,10 @@ install_initramfs() {
     
     build_initramfs
 
-    asuser rm -r initramfs
+    if [ -e muslroot ]
+    then
+	rm -r muslroot
+    fi
     diskfile="`cat diskfile | tr -d '\n'`"
     loopdev="`cat loopdev | tr -d '\n'`"
     mountpoint="/mnt/$diskfile"p1
@@ -569,4 +621,5 @@ then
     fi
 fi
 
-main
+#main
+build_initramfs

@@ -13,6 +13,8 @@ Currently designed only for Raspberry Pi. This first commit only builds a 'vanil
 - Internet connection with /etc/resolv.conf available (to downloaded sources)
 - sudo
 - mkfs.ext4, mkfs.vfat
+- bash
+- curl
 
 # build.sh
 This is the main script that builds the system. You can easily configure some basic variables/parameters at the top. Run it as root (`sudo ./build.sh`). The parts that don't need root privileges will be run as the regular user. The first argument is the number of parallel jobs (`nproc` by default).
