@@ -102,7 +102,7 @@ emerge --with-bdeps=n --depclean
 revdep-rebuild
 env-update
 . /etc/profile
-rc-update add NetworkManager default
+#rc-update add NetworkManager default
 rc-update add alsasound boot
 #rc-update add consolekit default
 rc-update add cupsd default
@@ -118,14 +118,14 @@ echo "server 127.127.1.0" >> /etc/ntp.conf
 echo "fudge  127.127.1.0 stratum 10" >> /etc/ntp.conf
 echo "disable monitor" >> /etc/ntp.conf
 cp /root/tmp/cupsd.conf /etc/cups/
-for x in lp cdrom video cdrw usb lpadmin plugdev
+for x in lp cdrom video cdrw usb lpadmin
 do
     gpasswd -a guest $x
 done
 
 cd /home/guest
 echo 'export XSESSION=openbox' >> .bashrc
-cp /root/tmp/home/.Xresources > .
+cat /root/tmp/home/.Xresources >> .Xresources
 mkdir -p .config/openbox
 cp /root/tmp/home/.config/openbox/* .config/openbox/
 echo 'if [ "$(tty)" == "/dev/tty1" ]' >> .bash_profile
@@ -136,7 +136,7 @@ echo 'fi' >> .bash_profile
 cd
 chown -R guest:guest /home/guest
 chmod o-rwx /home/guest
-rm -r /root/tmp
+rm -r /root/tmp/*.xz
 sed 's|/root/tmp/install.sh||' /root/.bash_profile
 if [[ "$chroot" == "0" ]]
 then

@@ -383,7 +383,11 @@ unprepare_for_chroot() {
     sleep 1 # todo: fix this hack
     if ! df -a | grep "/dev/pts"
     then
-	mount none -t devpts /dev/pts
+	mount -t devpts none /dev/pts
+    fi
+    if ! df -a | grep "/dev/shm"
+    then
+	mount -t tmpfs none /dev/shm
     fi
     echo "Chroot preparations undone"
 }
