@@ -21,6 +21,7 @@ rc-update add sshd default
 set +e
 rc-service sshd start
 set -e
+echo "Unpacking gentoo snapshot ..."
 tar xpf "/root/tmp/gentoo-$snapshotver.tar.xz" -C /var/db/repos/
 mv "/var/db/repos/gentoo-$snapshotver" /var/db/repos/gentoo
 eselect profile list
@@ -32,21 +33,10 @@ env-update
 . /etc/profile
 cat /root/tmp/pw | chpasswd
 rm /root/tmp/pw
-sed -i 's/terminus-font X/terminus-font/' /etc/portage/package.use/plx
-emerge -q1 media-fonts/terminus-font
-sed -i 's/^consolefont=.*$/consolefont="ter-u32n"/' /etc/conf.d/consolefont
-rc-update add consolefont boot
-if [[ "$chroot" == "0" ]]
-then
-    set +e
-    rc-service consolefont restart
-    set -e
-fi
 emerge -q1 app-admin/syslog-ng
 rc-update add syslog-ng default
 useradd -m -G users,audio -s /bin/bash guest
 sed -i 's/-a root/-a guest/' /etc/inittab
-sed -i 's/terminus-font/terminus-font X/' /etc/portage/package.use/plx
 
 gpg --import /root/tmp/plx-pgp.asc
 emerge -q1 app-eselect/eselect-repository
@@ -128,7 +118,7 @@ echo 'export XSESSION=openbox' >> .bashrc
 cat /root/tmp/home/.Xresources >> .Xresources
 mkdir -p .config/openbox
 cp /root/tmp/home/.config/openbox/* .config/openbox/
-echo 'if [ "$(tty)" == "/dev/tty1" ]' >> .bash_profile
+echo 'if [[ "`tty`" == "/dev/tty1" ]]' >> .bash_profile
 echo 'then' >> .bash_profile
 echo -e '\tstartx' >> .bash_profile
 echo 'fi' >> .bash_profile
@@ -137,7 +127,8 @@ cd
 chown -R guest:guest /home/guest
 chmod o-rwx /home/guest
 rm -r /root/tmp/*.xz
-sed 's|/root/tmp/install.sh||' /root/.bash_profile
+#sed 's|/root/tmp/install.sh||' /root/.bash_profile
+rm /root/.bash_profile # todo be general in case it is modified
 touch /var/lib/misc/openrc-shutdowntime
 if [[ "$chroot" == "0" ]]
 then

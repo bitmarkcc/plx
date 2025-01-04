@@ -246,7 +246,10 @@ finalize_root_fs() {
     fi
     tar xpf "stage3-arm64-openrc-$stage3ver.tar.xz" --xattrs-include='*.*' --numeric-owner -C "$mountpoint"
     mkdir "$mountpoint/root/tmp"
-    echo "/root/tmp/install.sh" > "$mountpoint/root/.bash_profile"
+    echo 'if [[ "`tty`" == "/dev/tty1" ]]' > "$mountpoint/root/.bash_profile"
+    echo 'then' >> "$mountpoint/root/.bash_profile"
+    echo -e "\t/root/tmp/install.sh" >> "$mountpoint/root/.bash_profile"
+    echo 'fi' >> "$mountpoint/root/.bash_profile"
     cp cupsd.conf "$mountpoint/root/tmp/"
     cp "--preserve=mode,timestamps" distfiles/* "$mountpoint/var/cache/distfiles/"
     cp fstab "$mountpoint/etc/"
@@ -303,6 +306,8 @@ finalize_root_fs() {
 	mkdir -p "$mountpoint/root/.ssh"
 	cat id_rsa.pub >> "$mountpoint/root/.ssh/authorized_keys"
     fi
+    cp swclock-helper.sh "$mountpoint/usr/local/bin/"
+    chmod +x "$mountpoint/usr/local/bin/swclock-helper.sh"
     echo "UTC" > "$mountpoint/etc/timezone"
     cp world "$mountpoint/var/lib/portage/"
     sed -i 's/$date/'"`date`"'/g' "$mountpoint/root/tmp/install.sh"
@@ -558,8 +563,8 @@ build_initramfs() { # inside a musl chroot
     unprepare_for_musl_chroot
 
     cd muslroot/home/worker/initramfs
-    asuser find . -print0 | asuser cpio --null -ov --format=newc | asuser gzip -9 | asuser tee ../../../../initramfs.cpio.gz >> /dev/null
-    cd ..
+    asuser find . -print0 | asuser cpio --null -ov --format=newc | asuser gzip -9 | asuser tee "$workdir/initramfs.cpio.gz" >> /dev/null
+    cd "$workdir"
 
     echo "Built initramfs"
 }
@@ -608,6 +613,7 @@ main() {
     finalize_disk_image
 }
 
+workdir="`pwd`"
 njobs="`nproc`"
 user="`logname`"
 if [ ! -z "$1" ]
