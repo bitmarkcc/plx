@@ -479,7 +479,7 @@ finalize_disk_image() {
 clean() {
     echo "Cleaning PLX build files ..."
     asuser rm -rf "initramfs.cpio.gz"
-    asuser rm -rf "muslroot"
+    rm -rf "muslroot"
     asuser rm -rf "linux-stable_$kernelver"
     asuser rm -rf "raspi-firmware-$firmwarever"
     if [ -e diskfile ]
