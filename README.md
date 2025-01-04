@@ -28,6 +28,7 @@ By automatically, we mean fully automated. Once you power on the Raspberry Pi wi
 - mkfs.ext4, mkfs.vfat
 - bash
 - curl
+- >= 128 GiB micro-SD card (initially 8 GiB is written, but more partitions are added later)
 
 # Installation
 
