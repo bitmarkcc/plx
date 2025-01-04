@@ -9,7 +9,7 @@ muslver="20241230T163322Z"
 stage3ver="20241230T163322Z"
 snapshotver="20250101"
 KERNEL="kernel8" # kernel_2712 for raspi5
-installinchroot=0 # 1 if you will run install.sh in a chroot
+installinchroot=1 # 1 if you will run install.sh in a chroot
 
 asuser() {
     sudo -u "$user" $@
@@ -51,7 +51,7 @@ download_files() {
 	exit 1
     fi
     muslfile="stage3-arm64-musl-$muslver.tar.xz"
-    if [ ! f "$muslfile" ]
+    if [ ! -f "$muslfile" ]
     then
 	echo "Downloading musl stage3 source ..."
 	asuser curl -L "https://plx.im/gentoo/$muslfile" -o "$muslfile"
