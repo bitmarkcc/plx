@@ -9,7 +9,7 @@ muslver="20241230T163322Z"
 stage3ver="20241230T163322Z"
 snapshotver="20250101"
 KERNEL="kernel8" # kernel_2712 for raspi5
-installinchroot=1 # 1 if you will run install.sh in a chroot
+installinchroot=0 # 1 if you will run install.sh in a chroot
 
 asuser() {
     sudo -u "$user" $@
