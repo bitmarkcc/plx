@@ -621,5 +621,4 @@ then
     fi
 fi
 
-#main
-build_initramfs
+main
