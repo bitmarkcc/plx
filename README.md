@@ -33,6 +33,7 @@ By automatically, we mean fully automated. Once you power on the Raspberry Pi wi
 # Installation
 
 `sudo ./build.sh`
+
 `dd if=plx<random>.img of=/dev/sdx bs=1M status=progress`
 
 # More details:
