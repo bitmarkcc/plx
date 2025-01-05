@@ -2,8 +2,6 @@
 
 set -e
 
-snapshotver="$1"
-
 . /etc/profile
 tar xpf /root/tmp/gentoo-"$snapshotver".tar.xz -C /var/db/repos/
 mv "/var/db/repos/gentoo-$snapshotver" /var/db/repos/gentoo
@@ -18,8 +16,18 @@ env-update
 
 gpg --import /root/tmp/plx-pgp.asc
 emerge -q1 app-eselect/eselect-repository
+set +e
 eselect repository add plx git https://github.com/bitmarkcc/plx-overlay
-emaint sync -r plx
+set -e
+
+tar xpf "/root/tmp/plx-overlay-$plxolver.tar.gz" -C /var/db/repos/
+cd /var/db/repos
+if [ -e plx ]
+then
+    rmdir plx
+fi
+mv plx-overlay-$plxolver plx
+
 cd /var/db/repos/plx/app-misc/cwallet
 gpg --verify Manifest
 

@@ -188,6 +188,7 @@ install_stage3() {
     mkdir "$mountpoint/root/tmp"
     cp "gentoo-$snapshotver.tar.xz" "$mountpoint/root/tmp/"
     cp hostname "$mountpoint/etc/"
+    cp "plx-overlay-$plxolver.tar.gz" "$mountpoint/root/tmp/"
     cp plx-pgp.asc "$mountpoint/root/tmp/"
     if [ -e portage/env ]
     then
@@ -231,6 +232,8 @@ get_distfiles_and_autounmasking() {
     loopdev="`cat loopdev | tr -d '\n'`"
     mountpoint="/mnt/$diskfile"p2
     cp fetch-autounmask.sh "$mountpoint/root/tmp"
+    sed -i 's/$snapshotver/'"$snapshotver"'/' "$mountpoint/root/tmp/fetch-autounmask.sh"
+    sed -i 's/$plxolver/'"$plxolver"'/' "$mountpoint/root/tmp/fetch-autounmask.sh"
     chmod +x "$mountpoint/root/tmp/fetch-autounmask.sh"
     chroot "$mountpoint" "/root/tmp/fetch-autounmask.sh" "$snapshotver"
     if [ -e distfiles ]
