@@ -16,11 +16,11 @@ Currently designed only for Raspberry Pi, this first release _automatically_ bui
 
 # Automatically
 
-By automatically, we mean fully automated. Once you power on the Raspberry Pi with the sdcard containing the disk image, the system starts building itself completely from source, and no Internet access needed. Of course, it may take a few days for the Raspberry Pi to complete the installation...For now we rely on the stage3 binaries, however, in a future release we plan to bootstrap the tarball through a more trustless method.
+By automatically, we mean fully automated. Once you power on the Raspberry Pi with the SD card containing the disk image, the system starts building itself completely from source, and no Internet access needed. Of course, it may take a few days for the Raspberry Pi to complete the installation...For now we rely on the stage3 binaries, however, in a future release we plan to bootstrap the tarball through a more trustless method.
 
 # Prerequisites
 
-- Standard Linux toolse, C compiler, xz, tar, mount, umount, ...
+- Standard Linux toolset, core utils, C compiler, xz, tar, mount, umount, ...
 - chroot (and root access)
 - parted
 - cpio
