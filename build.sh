@@ -297,6 +297,7 @@ finalize_root_fs() {
     chmod +x "$mountpoint/root/tmp/install.sh"
     sed -i 's/$snapshotver/'"$snapshotver"'/g' "$mountpoint/root/tmp/install.sh"
     sed -i 's/$plxolver/'"$plxolver"'/g' "$mountpoint/root/tmp/install.sh"
+    sed -i 's/$libc/'"$libc"'/' "$mountpoint/root/tmp/install.sh"
     if [[ "$installinchroot" == "1" ]]
     then
 	sed -i 's/chroot=0/chroot=1/' "$mountpoint/root/tmp/install.sh"

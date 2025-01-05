@@ -145,6 +145,7 @@ chmod o-rwx /home/guest
 rm -r /root/tmp/*.xz
 #sed 's|/root/tmp/install.sh||' /root/.bash_profile
 rm /root/.bash_profile # todo be general in case it is modified
+mkdir -p /var/lib/misc
 touch /var/lib/misc/openrc-shutdowntime
 if [[ "$chroot" == "0" ]]
 then
