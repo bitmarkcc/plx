@@ -13,6 +13,7 @@ rc-update add swclock-helper default
 set +e
 rc-service swclock-helper start
 set -e
+rc-update add swclock default
 rc-update add local default
 set +e
 rc-service local start
