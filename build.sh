@@ -8,6 +8,7 @@ busyboxver="1_36_1"
 muslver="20241230T163322Z"
 stage3ver="20241230T163322Z"
 snapshotver="20250101"
+plxolver="1.0.0" # PLX overlay version
 KERNEL="kernel8" # kernel_2712 for raspi5
 installinchroot=0 # 1 if you will run install.sh in a chroot
 
@@ -83,6 +84,18 @@ download_files() {
 	echo "Invalid hash for gentoo snapshot ($snapshotfile)"
 	exit 1
     fi
+    plxolfile="plx-overlay-$plxolver.tar.gz"
+    if [ ! -f "$plxolfile" ]
+    then
+	echo "Downloading plx overlay ..."
+	asuser curl -L "https://github.com/bitmarkcc/plx-overlay/archive/refs/tags/v$plxolver.tar.gz" -o "$plxolfile"
+    fi
+    if ! sha512sum -c "$plxolfile.SHA512"
+    then
+	echo "Invalid hash for PLX overlay file ($plxolfile)"
+	exit 1
+    fi
+    
     echo "Downloaded files"
 }
 
@@ -261,6 +274,7 @@ finalize_root_fs() {
     cp install.sh "$mountpoint/root/tmp/"
     chmod +x "$mountpoint/root/tmp/install.sh"
     sed -i 's/$snapshotver/'"$snapshotver"'/g' "$mountpoint/root/tmp/install.sh"
+    sed -i 's/$plxolver/'"$plxolver"'/g' "$mountpoint/root/tmp/install.sh"
     if [[ "$installinchroot" == "1" ]]
     then
 	sed -i 's/chroot=0/chroot=1/' "$mountpoint/root/tmp/install.sh"

@@ -43,25 +43,33 @@ emerge -q1 app-eselect/eselect-repository
 set +e
 eselect repository add plx git https://github.com/bitmarkcc/plx-overlay
 set -e
-emaint sync -r plx
+tar xpf "/root/tmp/plx-overlay-$plxolver.tar.gz" -C /var/db/repos/
+cd /var/db/repos
+if [ -e plx ]
+then
+    rmdir plx
+fi
+mv plx-overlay-$plxolver plx
 cd /var/db/repos/plx/app-misc/cwallet
 gpg --verify Manifest
 
 if [[ "$chroot" == "0" ]]
 then
+    emerge -q1 sys-block/parted
     echo "Partitioning ..."
     mmc="/dev/mmcblk0"
-    parted -sa optimal "$mmc" mkpart swap swapfs 8GiB 16GiB
+    parted -fsa optimal "$mmc" mkpart swap linux-swap 8GiB 16GiB
     parted -sa optimal "$mmc" mkpart portage ext4 16GiB 48GiB
     parted -sa optimal "$mmc" mkpart distfiles ext4 48GiB 64GiB
     parted -sa optimal "$mmc" mkpart home ext4 64GiB 100%
     mkswap "$mmc"p3
-    mkfs.ext4 "$mmc"p4
-    mkfs.ext4 "$mmc"p5
-    mkfs.ext4 "$mmc"p6
+    mkfs.ext4 -F "$mmc"p4
+    mkfs.ext4 -F "$mmc"p5
+    mkfs.ext4 -F "$mmc"p6
     swapon "$mmc"p3
     mkdir /mnt/portage
     mount "$mmc"p4 /mnt/portage
+    echo "Copying /var/tmp/portage files to new partition ..."
     cp -aT /var/tmp/portage /mnt/portage
     umount /mnt/portage
     rm -r /var/tmp/portage
@@ -69,16 +77,17 @@ then
     mount "$mmc"p4 /var/tmp/portage
     mkdir /mnt/distfiles
     mount "$mmc"p5 /mnt/distfiles
+    echo "Copying /var/cache/distfiles files to new partition ..."
     cp -aT /var/cache/distfiles /mnt/distfiles
     umount /mnt/distfiles
     rm -r /var/cache/distfiles
     mkdir /var/cache/distfiles
     mount "$mmc"p5 /var/cache/distfiles
     mount "$mmc"p6 /home
-    sed -i 's|^#/dev/mmcblk0p3|/dev/mmcblk0p3|'
-    sed -i 's|^#/dev/mmcblk0p4|/dev/mmcblk0p4|'
-    sed -i 's|^#/dev/mmcblk0p5|/dev/mmcblk0p5|'
-    sed -i 's|^#/dev/mmcblk0p6|/dev/mmcblk0p6|'
+    sed -i 's|^#/dev/mmcblk0p3|/dev/mmcblk0p3|' /etc/fstab
+    sed -i 's|^#/dev/mmcblk0p4|/dev/mmcblk0p4|' /etc/fstab
+    sed -i 's|^#/dev/mmcblk0p5|/dev/mmcblk0p5|' /etc/fstab
+    sed -i 's|^#/dev/mmcblk0p6|/dev/mmcblk0p6|' /etc/fstab
     echo "Done partitioning"
 fi
 
