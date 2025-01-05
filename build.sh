@@ -628,11 +628,11 @@ install_initramfs() {
 }
 
 main() {
-#    download_files
-#    prepare_disk_image
-#    install_firmware
-#    install_kernel
-#    install_initramfs
+    download_files
+    prepare_disk_image
+    install_firmware
+    install_kernel
+    install_initramfs
     clear_root_fs
     install_stage3
     prepare_for_chroot
