@@ -285,6 +285,7 @@ finalize_root_fs() {
     cp inittab "$mountpoint/etc/"
     chmod +x *.start
     cp "--preserve=mode" staticip.start "$mountpoint/etc/local.d/"
+    cp "plx-overlay-$plxolver.tar.gz" "$mountpoint/root/tmp/"
     cp plx-pgp.asc "$mountpoint/root/tmp/"
     if [ -e portage.auto/env ]
     then
@@ -310,10 +311,6 @@ finalize_root_fs() {
     if [ -e portage.auto/package.use ]
     then
 	cp portage.auto/package.use/* "$mountpoint/etc/portage/package.use/"
-    fi
-    if [ -e portage.auto/repos.conf ]
-    then
-	cp -rT portage.auto/repos.conf "$mountpoint/etc/portage/repos.conf"
     fi
     pw="$diskfile"
     echo "root:$pw" > "$mountpoint/root/tmp/pw"
