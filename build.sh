@@ -11,6 +11,7 @@ snapshotver="20250101"
 plxolver="1.0.0" # PLX overlay version
 KERNEL="kernel8" # kernel_2712 for raspi5
 installinchroot=0 # 1 if you will run install.sh in a chroot
+libc="musl" # musl or glibc
 
 asuser() {
     sudo -u "$user" $@
@@ -62,16 +63,19 @@ download_files() {
 	echo "Invalid hash for musl (stage3) source ($musfile)"
 	exit 1
     fi
-    stage3file="stage3-arm64-openrc-$stage3ver.tar.xz"
-    if [ ! -f "$stage3file" ]
+    if [[ "$libc" == "glibc" ]]
     then
-	echo "Downloading stage3 tarball ..."
-	asuser curl -L "https://plx.im/gentoo/$stage3file" -o "$stage3file"
-    fi
-    if ! sha512sum -c "$stage3file.SHA512"
-    then
-	echo "Invalid hash for stage3 tarball ($stage3file)"
-	exit 1
+	stage3file="stage3-arm64-openrc-$stage3ver.tar.xz"
+	if [ ! -f "$stage3file" ]
+	then
+	    echo "Downloading stage3 tarball ..."
+	    asuser curl -L "https://plx.im/gentoo/$stage3file" -o "$stage3file"
+	fi
+	if ! sha512sum -c "$stage3file.SHA512"
+	then
+	    echo "Invalid hash for stage3 tarball ($stage3file)"
+	    exit 1
+	fi
     fi
     snapshotfile="gentoo-$snapshotver.tar.xz"
     if [ ! -f "$snapshotfile" ]
@@ -179,12 +183,18 @@ install_stage3() {
     diskfile="`cat diskfile | tr -d '\n'`"
     loopdev="`cat loopdev | tr -d '\n'`"
     mountpoint="/mnt/$diskfile"p2
+    stage3file="stage3-arm64-openrc-$stage3ver.tar.xz"
     mkdir -p "$mountpoint"
     if ! df | grep "$mountpoint"
     then
 	mount "$loopdev"p2 "$mountpoint"
     fi
-    tar xpf "stage3-arm64-openrc-$stage3ver.tar.xz" --xattrs-include='*.*' --numeric-owner -C "$mountpoint"
+    if [[ "$libc" == "musl" ]]
+    then
+	tar xpf "stage3-arm64-musl-$muslver.tar.xz" --xattrs-include='*.*' --numeric-owner -C "$mountpoint"
+    else
+	tar xpf "stage3-arm64-openrc-$stage3ver.tar.xz" --xattrs-include='*.*' --numeric-owner -C "$mountpoint"
+    fi
     mkdir "$mountpoint/root/tmp"
     cp "gentoo-$snapshotver.tar.xz" "$mountpoint/root/tmp/"
     cp hostname "$mountpoint/etc/"
@@ -219,7 +229,10 @@ install_stage3() {
     then
 	cp -rT portage/repos.conf "$mountpoint/etc/portage/repos.conf"
     fi
-    echo "UTC" > "$mountpoint/etc/timezone"
+    if [[ "$libc" == "glibc" ]]
+    then
+	echo "UTC" > "$mountpoint/etc/timezone"
+    fi
     cp world "$mountpoint/var/lib/portage/"
     umount "$mountpoint"
     echo "Installed stage3 tarball"
@@ -234,6 +247,7 @@ get_distfiles_and_autounmasking() {
     cp fetch-autounmask.sh "$mountpoint/root/tmp"
     sed -i 's/$snapshotver/'"$snapshotver"'/' "$mountpoint/root/tmp/fetch-autounmask.sh"
     sed -i 's/$plxolver/'"$plxolver"'/' "$mountpoint/root/tmp/fetch-autounmask.sh"
+    sed -i 's/$libc/'"$libc"'/' "$mountpoint/root/tmp/fetch-autounmask.sh"
     chmod +x "$mountpoint/root/tmp/fetch-autounmask.sh"
     chroot "$mountpoint" "/root/tmp/fetch-autounmask.sh" "$snapshotver"
     if [ -e distfiles ]
@@ -260,7 +274,12 @@ finalize_root_fs() {
     then
 	mount "$loopdev"p2 "$mountpoint"
     fi
-    tar xpf "stage3-arm64-openrc-$stage3ver.tar.xz" --xattrs-include='*.*' --numeric-owner -C "$mountpoint"
+    if [[ "$libc" == "musl" ]]
+    then
+	tar xpf "stage3-arm64-musl-$stage3ver.tar.xz" --xattrs-include='*.*' --numeric-owner -C "$mountpoint"
+    else
+	tar xpf "stage3-arm64-openrc-$stage3ver.tar.xz" --xattrs-include='*.*' --numeric-owner -C "$mountpoint"
+    fi
     mkdir "$mountpoint/root/tmp"
     echo 'if [[ "`tty`" == "/dev/tty1" ]]' > "$mountpoint/root/.bash_profile"
     echo 'then' >> "$mountpoint/root/.bash_profile"
@@ -322,7 +341,10 @@ finalize_root_fs() {
     fi
     cp swclock-helper.sh "$mountpoint/usr/local/bin/"
     chmod +x "$mountpoint/usr/local/bin/swclock-helper.sh"
-    echo "UTC" > "$mountpoint/etc/timezone"
+    if [[ "$libc" == "glibc" ]]
+    then
+	echo "UTC" > "$mountpoint/etc/timezone"
+    fi
     cp world "$mountpoint/var/lib/portage/"
     sed -i 's/$date/'"`date`"'/g' "$mountpoint/root/tmp/install.sh"
     umount "$mountpoint"
@@ -547,7 +569,7 @@ build_initramfs() { # inside a musl chroot
     then
 	asuser rm -r initramfs.cpio.gz
     fi
-    if [ -e initramfs ]
+    if [ -e initramfs ] # not needed anymore
     then
 	asuser rm -r initramfs
     fi
@@ -606,11 +628,11 @@ install_initramfs() {
 }
 
 main() {
-    download_files
-    prepare_disk_image
-    install_firmware
-    install_kernel
-    install_initramfs
+#    download_files
+#    prepare_disk_image
+#    install_firmware
+#    install_kernel
+#    install_initramfs
     clear_root_fs
     install_stage3
     prepare_for_chroot

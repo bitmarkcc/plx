@@ -12,6 +12,7 @@ Currently designed only for Raspberry Pi, this first release _automatically_ bui
 - SSHD disallows password logins. The config is setup so that you must login with your SSH key.
 - WiFi is not enabled. You can optionally add it by installing the needed firmware.
 - As you can see in the world file, some noteworthy packages include gimp, zbar, cryptsetup, tor, bitcoin-core, openvpn, amule, irssi (with otr), transmission, and our custom program, cwallet (a tool for viewing wallet keys and managing/creating a paper wallet).
+- As you can see in portage/make.conf, urandom USE flag is disabled as are various graphical interfaces (some programs of course have the graphical interfaces' USE flags enabled).
 
 # Automatically
 
@@ -19,7 +20,7 @@ By automatically, we mean fully automated. Once you power on the Raspberry Pi wi
 
 # Prerequisites
 
-- Standard Linux toolset (binutils), xz, tar, mount, umount, ...
+- Standard Linux toolse, C compiler, xz, tar, mount, umount, ...
 - chroot (and root access)
 - parted
 - cpio
