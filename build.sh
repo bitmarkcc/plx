@@ -8,9 +8,9 @@ busyboxver="1_36_1"
 muslver="20241230T163322Z"
 stage3ver="20241230T163322Z"
 snapshotver="20250101"
-plxolver="1.0.0" # PLX overlay version
+plxolver="1.1.0" # PLX overlay version
 KERNEL="kernel8" # kernel_2712 for raspi5
-installinchroot=0 # 1 if you will run install.sh in a chroot
+installinchroot=1 # 1 if you will run install.sh in a chroot
 libc="musl" # musl or glibc
 
 asuser() {
@@ -141,40 +141,47 @@ install_firmware() {
     echo "Installed firmware"
 }
 
-install_kernel() {
+install_kernel() { # in a musl chroot
     echo "Building and installing kernel ..."
-    if [ -e "linux-stable_$kernelver" ]
+    if [ -e "linux-stable_$kernelver" ] # not needed anymore
     then
 	asuser rm -r "linux-stable_$kernelver"
     fi
-    asuser tar -xf "linux-stable_$kernelver.tar.gz"
-    cd "linux-stable_$kernelver"
-    if [[ "$KERNEL" == kernel8 ]]
+
+    if [ -e muslroot ]
     then
-	asuser make bcm2711_defconfig
-    elif [[ "$KERNEL" == kernel_2712 ]]
-    then
-	asuser make bcm2712_defconfig
+	unprepare_for_musl_chroot
+	rm -r muslroot
     fi
-    ./scripts/config --set-val CONFIG_FONTS y
-    asuser make olddefconfig
-    sed 's/^# CONFIG_FONT_TER16x32 is not set/CONFIG_FONT_TER16x32=y/' .config | asuser tee .config.tmp >> /dev/null
-    sed 's/^CONFIG_FONT_8x8=y/# CONFIG_FONT_8x8 is not set/' .config.tmp | asuser tee .config >> /dev/null
-    rm .config.tmp
-    rm .config.old
-    asuser make -j"$njobs" Image.gz dtbs # modules only needed for wifi, I think
-    diskfile="`cat ../diskfile | tr -d '\n'`"
-    loopdev="`cat ../loopdev | tr -d '\n'`"
+
+    mkdir muslroot
+    tar xpf "stage3-arm64-musl-$muslver.tar.xz" --xattrs-include='*.*' --numeric-owner -C "muslroot"
+    mkdir muslroot/root/tmp
+    cp build-kernel.sh muslroot/root/tmp/
+    chmod +x muslroot/root/tmp/build-kernel.sh
+    cp build-kernel-worker.sh muslroot/root/tmp/
+    cp "linux-stable_$kernelver.tar.gz" muslroot/root/tmp/
+    cp "gentoo-$snapshotver.tar.xz" muslroot/root/tmp/
+    sed -i 's/$snapshotver/'"$snapshotver"'/' muslroot/root/tmp/build-kernel.sh
+    sed -i 's/$kernelver/'"$kernelver"'/' muslroot/root/tmp/build-kernel-worker.sh
+    sed -i 's/$njobs/'"$njobs"'/' muslroot/root/tmp/build-kernel-worker.sh
+    sed -i 's/$KERNEL/'"$KERNEL"'/' muslroot/root/tmp/build-kernel-worker.sh
+    prepare_for_musl_chroot
+    chroot muslroot /root/tmp/build-kernel.sh
+    unprepare_for_musl_chroot
+
+    diskfile="`cat diskfile | tr -d '\n'`"
+    loopdev="`cat loopdev | tr -d '\n'`"
     mkdir -p "/mnt/$diskfile"p1
     mount "$loopdev"p1 "/mnt/$diskfile"p1
-    cp arch/arm64/boot/Image.gz /mnt/"$diskfile"p1/"$KERNEL".img
-    cp arch/arm64/boot/dts/broadcom/*.dtb /mnt/"$diskfile"p1/
+    kernelbuildpath="muslroot/home/worker/linux-stable_$kernelver/arch/arm64/boot"
+    cp "$kernelbuildpath/Image.gz" /mnt/"$diskfile"p1/"$KERNEL".img
+    cp "$kernelbuildpath/dts/broadcom/"*.dtb /mnt/"$diskfile"p1/
     mkdir -p /mnt/"$diskfile"p1/overlays
-    cp arch/arm64/boot/dts/overlays/*.dtb* /mnt/"$diskfile"p1/overlays/
-    cp arch/arm64/boot/dts/overlays/README /mnt/"$diskfile"p1/overlays/
+    cp "$kernelbuildpath/dts/overlays/"*.dtb* /mnt/"$diskfile"p1/overlays/
+    cp "$kernelbuildpath/dts/overlays/README" /mnt/"$diskfile"p1/overlays/
     umount "/mnt/$diskfile"p1
-    cd ..
-    asuser rm -r "linux-stable_$kernelver"
+    rm -r "muslroot"
     echo "Installed kernel"
 }
 
@@ -425,6 +432,7 @@ prepare_for_musl_chroot() {
     then
 	mount --rbind /run "$mountpoint/run"
     fi
+    cp -L /etc/resolv.conf "$mountpoint/etc/"
     echo "Prepared for musl chroot"
 }
 
@@ -465,7 +473,13 @@ unprepare_for_chroot() {
     then
 	mount -t tmpfs none /dev/shm
     fi
-    echo "Chroot preparations undone"
+    if df -a | grep "$mountpoint"
+    then
+	echo "Please wait until $mountpoint mountings are fully unmounted"
+	exit 1
+    else
+	echo "Chroot preparations undone"
+    fi
 }
 
 unprepare_for_musl_chroot() {
@@ -504,7 +518,13 @@ unprepare_for_musl_chroot() {
     then
 	mount -t tmpfs none /dev/shm
     fi
-    echo "Musl chroot preparations undone"
+    if df -a | grep muslroot
+    then
+	echo "Please wait until muslroot mountings are fully unmounted"
+	exit 1
+    else
+	echo "Musl chroot preparations undone"
+    fi
 }
 
 finalize_disk_image() {
@@ -521,7 +541,6 @@ finalize_disk_image() {
 clean() {
     echo "Cleaning PLX build files ..."
     asuser rm -rf "initramfs.cpio.gz"
-    rm -rf "muslroot"
     asuser rm -rf "linux-stable_$kernelver"
     asuser rm -rf "raspi-firmware-$firmwarever"
     if [ -e diskfile ]
@@ -544,7 +563,7 @@ clean() {
 	    set -e
 	    asuser rm loopdev
 	fi
-	asuser rm "$diskfile"
+	asuser rm -f "$diskfile"
 	if [ -e "$diskfile.xz" ]
 	then
 	    asuser rm "$diskfile.xz"
@@ -558,6 +577,11 @@ clean() {
     if [ -e distfiles ]
     then
 	rm -r distfiles
+    fi
+    if [ -e muslroot ]
+    then
+	unprepare_for_musl_chroot
+	rm -r muslroot
     fi
     echo "Cleaned PLX build files"
 }

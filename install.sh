@@ -131,6 +131,7 @@ done
 
 cd /home/guest
 echo 'export XSESSION=openbox' >> .bashrc
+#echo 'alias lock="slock xset dpms 0 0 60"' >> .bashrc
 cat /root/tmp/home/.Xresources >> .Xresources
 mkdir -p .config/openbox
 cp /root/tmp/home/.config/openbox/* .config/openbox/

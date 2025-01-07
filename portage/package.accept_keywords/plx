@@ -1,5 +1,6 @@
 media-gfx/zbar ~arm64
 net-p2p/amule ~arm
 app-misc/cwallet ~arm64
+x11-misc/xkbset ~arm64
 net-p2p/transmission ~arm64
 dev-build/boost-m4 arm
