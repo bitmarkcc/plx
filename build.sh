@@ -374,11 +374,18 @@ clear_root_fs() {
 	umount "$mountpoint"
     fi
     sleep 3
-    if ! mkfs.ext4 -F "$loopdev"p2
-    then
+    count=0
+    while ! mkfs.ext4 -F "$loopdev"p2
+    do
 	fuser -km "$loopdev"p2
 	sleep 3
 	mkfs.ext4 -F "$loopdev"p2
+	let count=count+1
+	if [ "$count" -gt 9 ]
+	then
+	    echo "Cannot clear filesystem"
+	    exit 1
+	fi
     fi
     echo "Cleared root filesystem"
 }
