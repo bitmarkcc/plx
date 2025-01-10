@@ -18,4 +18,4 @@ sed 's/^# CONFIG_FONT_TER16x32 is not set/CONFIG_FONT_TER16x32=y/' .config | tee
 sed 's/^CONFIG_FONT_8x8=y/# CONFIG_FONT_8x8 is not set/' .config.tmp | tee .config >> /dev/null
 rm .config.tmp
 rm .config.old
-make -j"$njobs" Image.gz dtbs # modules only needed for wifi, I think
+make -j"$njobs" Image.gz modules dtbs

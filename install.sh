@@ -42,23 +42,6 @@ cat /root/tmp/pw | chpasswd
 rm /root/tmp/pw
 emerge -q1 app-admin/syslog-ng
 rc-update add syslog-ng default
-useradd -m -G users,audio -s /bin/bash guest
-sed -i 's/-a root/-a guest/' /etc/inittab
-
-gpg --import /root/tmp/plx-pgp.asc
-emerge -q1 app-eselect/eselect-repository
-set +e
-eselect repository add plx git https://github.com/bitmarkcc/plx-overlay
-set -e
-tar xpf "/root/tmp/plx-overlay-$plxolver.tar.gz" -C /var/db/repos/
-cd /var/db/repos
-if [ -e plx ]
-then
-    rmdir plx
-fi
-mv plx-overlay-$plxolver plx
-cd /var/db/repos/plx/app-misc/cwallet
-gpg --verify Manifest
 
 if [[ "$chroot" == "0" ]]
 then
@@ -97,6 +80,24 @@ then
     sed -i 's|^#/dev/mmcblk0p6|/dev/mmcblk0p6|' /etc/fstab
     echo "Done partitioning"
 fi
+
+useradd -m -G users,audio -s /bin/bash guest
+sed -i 's/-a root/-a guest/' /etc/inittab
+
+gpg --import /root/tmp/plx-pgp.asc
+emerge -q1 app-eselect/eselect-repository
+set +e
+eselect repository add plx git https://github.com/bitmarkcc/plx-overlay
+set -e
+tar xpf "/root/tmp/plx-overlay-$plxolver.tar.gz" -C /var/db/repos/
+cd /var/db/repos
+if [ -e plx ]
+then
+    rmdir plx
+fi
+mv plx-overlay-$plxolver plx
+cd /var/db/repos/plx/app-misc/cwallet
+gpg --verify Manifest
 
 emerge -q --update --deep --newuse @world
 env-update

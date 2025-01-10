@@ -154,6 +154,11 @@ install_kernel() { # in a musl chroot
 	rm -r muslroot
     fi
 
+    if [ -e modules ]
+    then
+	rm -r modules
+    fi
+
     mkdir muslroot
     tar xpf "stage3-arm64-musl-$muslver.tar.xz" --xattrs-include='*.*' --numeric-owner -C "muslroot"
     mkdir muslroot/root/tmp
@@ -163,6 +168,8 @@ install_kernel() { # in a musl chroot
     cp "linux-stable_$kernelver.tar.gz" muslroot/root/tmp/
     cp "gentoo-$snapshotver.tar.xz" muslroot/root/tmp/
     sed -i 's/$snapshotver/'"$snapshotver"'/' muslroot/root/tmp/build-kernel.sh
+    sed -i 's/$kernelver/'"$kernelver"'/' muslroot/root/tmp/build-kernel.sh
+    sed -i 's/$njobs/'"$njobs"'/' muslroot/root/tmp/build-kernel.sh
     sed -i 's/$kernelver/'"$kernelver"'/' muslroot/root/tmp/build-kernel-worker.sh
     sed -i 's/$njobs/'"$njobs"'/' muslroot/root/tmp/build-kernel-worker.sh
     sed -i 's/$KERNEL/'"$KERNEL"'/' muslroot/root/tmp/build-kernel-worker.sh
@@ -180,6 +187,7 @@ install_kernel() { # in a musl chroot
     mkdir -p /mnt/"$diskfile"p1/overlays
     cp "$kernelbuildpath/dts/overlays/"*.dtb* /mnt/"$diskfile"p1/overlays/
     cp "$kernelbuildpath/dts/overlays/README" /mnt/"$diskfile"p1/overlays/
+    cp -a "$kernelbuildpath/lib/modules" modules
     umount "/mnt/$diskfile"p1
     rm -r "muslroot"
     echo "Installed kernel"
@@ -287,6 +295,7 @@ finalize_root_fs() {
     else
 	tar xpf "stage3-arm64-openrc-$stage3ver.tar.xz" --xattrs-include='*.*' --numeric-owner -C "$mountpoint"
     fi
+    cp -a modules "$mountpoint/lib/"
     mkdir "$mountpoint/root/tmp"
     echo 'if [[ "`tty`" == "/dev/tty1" ]]' > "$mountpoint/root/.bash_profile"
     echo 'then' >> "$mountpoint/root/.bash_profile"
@@ -386,7 +395,7 @@ clear_root_fs() {
 	    echo "Cannot clear filesystem"
 	    exit 1
 	fi
-    fi
+    done
     echo "Cleared root filesystem"
 }
 

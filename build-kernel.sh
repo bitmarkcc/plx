@@ -15,3 +15,5 @@ chmod +x /root/tmp/build-kernel-worker.sh
 mv /root/tmp /home/worker/
 
 su -c '/home/worker/tmp/build-kernel-worker.sh' - worker
+cd "/home/worker/linux-stable_$kernelver"
+make -j"$njobs" modules_install
