@@ -411,7 +411,7 @@ prepare_for_chroot() {
     fi
     if ! df | grep "$mountpoint/proc"
     then
-	mount -t proc proc "$mountpoint/proc"
+	mount --types proc /proc "$mountpoint/proc"
     fi
     if ! df | grep "$mountpoint/sys"
     then
@@ -423,7 +423,7 @@ prepare_for_chroot() {
     fi
     if ! df | grep "$mountpoint/run"
     then
-	mount --rbind /run "$mountpoint/run"
+	mount --bind /run "$mountpoint/run"
     fi
     cp -L /etc/resolv.conf "$mountpoint/etc/"
     echo "Prepared for chroot"
@@ -434,7 +434,7 @@ prepare_for_musl_chroot() {
     mountpoint="muslroot"
     if ! df | grep "$mountpoint/proc"
     then
-	mount -t proc proc "$mountpoint/proc"
+	mount --types proc /proc "$mountpoint/proc"
     fi
     if ! df | grep "$mountpoint/sys"
     then
@@ -446,7 +446,7 @@ prepare_for_musl_chroot() {
     fi
     if ! df | grep "$mountpoint/run"
     then
-	mount --rbind /run "$mountpoint/run"
+	mount --bind /run "$mountpoint/run"
     fi
     cp -L /etc/resolv.conf "$mountpoint/etc/"
     echo "Prepared for musl chroot"
@@ -456,29 +456,13 @@ unprepare_for_chroot() {
     echo "Undoing chroot preparations ..."
     diskfile="`cat diskfile | tr -d '\n'`"
     mountpoint="/mnt/$diskfile"p2
-    if mount | grep "$mountpoint/run"
-    then
-	umount -l "$mountpoint/run"
-    fi
-    if mount | grep "$mountpoint/dev/pts"
-    then
-	umount -l "$mountpoint/dev/pts"
-    fi
     if mount | grep "$mountpoint/dev"
     then
-	umount -l "$mountpoint/dev"
-    fi
-    if mount | grep "$mountpoint/sys"
-    then
-	umount -l "$mountpoint/sys"
-    fi
-    if mount | grep "$mountpoint/proc"
-    then
-	umount -l "$mountpoint/proc"
+	umount -l "$mountpoint"/dev{/shm,/pts,}
     fi
     if mount | grep "$mountpoint"
     then
-	umount -l "$mountpoint"
+	umount -R "$mountpoint"
     fi
     sleep 1 # todo: fix this hack
     if ! df -a | grep "/dev/pts"
@@ -487,7 +471,7 @@ unprepare_for_chroot() {
     fi
     if ! df -a | grep "/dev/shm"
     then
-	mount -t tmpfs none /dev/shm
+	mount --types tmpfs --options nosuid,nodev,noexec shm /dev/shm
     fi
     if df -a | grep "$mountpoint"
     then
@@ -501,29 +485,13 @@ unprepare_for_chroot() {
 unprepare_for_musl_chroot() {
     echo "Undoing musl chroot preparations ..."
     mountpoint="muslroot"
-    if mount | grep "$mountpoint/run"
-    then
-	umount -l "$mountpoint/run"
-    fi
-    if mount | grep "$mountpoint/dev/pts"
-    then
-	umount -l "$mountpoint/dev/pts"
-    fi
     if mount | grep "$mountpoint/dev"
     then
-	umount -l "$mountpoint/dev"
-    fi
-    if mount | grep "$mountpoint/sys"
-    then
-	umount -l "$mountpoint/sys"
-    fi
-    if mount | grep "$mountpoint/proc"
-    then
-	umount -l "$mountpoint/proc"
+	umount -l "$mountpoint"/dev{/shm,/pts,}
     fi
     if mount | grep "$mountpoint"
     then
-	umount -l "$mountpoint"
+	umount -R "$mountpoint"
     fi
     sleep 1 # todo: fix this hack
     if ! df -a | grep "/dev/pts"
@@ -532,7 +500,7 @@ unprepare_for_musl_chroot() {
     fi
     if ! df -a | grep "/dev/shm"
     then
-	mount -t tmpfs none /dev/shm
+	mount --types tmpfs --options nosuid,nodev,noexec shm /dev/shm
     fi
     if df -a | grep muslroot
     then
