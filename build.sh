@@ -12,6 +12,7 @@ plxolver="1.1.0" # PLX overlay version
 KERNEL="kernel8" # kernel_2712 for raspi5
 installinchroot=0 # 1 if you will run install.sh in a chroot
 libc="musl" # musl or glibc
+ddcount="8192" # number of megabytes for the capacity of the disk image, 8 GiB by default
 
 asuser() {
     sudo -u "$user" $@
@@ -107,11 +108,6 @@ prepare_disk_image() {
     echo "Preparing disk image ..."
     diskid="`head -c 8 /dev/random | base64 | head -c 8 | sed 's/=/_/g' | sed 's#/#-#g'`"
     diskfile="plx$diskid.img"
-    ddcount="8192"
-    if [[ "$installinchroot" == "1" ]]
-    then
-	ddcount="16384"
-    fi
     asuser dd if=/dev/zero of="$diskfile" bs=1048576B "count=$ddcount" status=progress
     asuser parted -sa optimal "$diskfile" mklabel gpt
     asuser parted -sa optimal "$diskfile" mkpart boot fat32 1MiB 257MiB
@@ -141,19 +137,18 @@ install_firmware() {
     echo "Installed firmware"
 }
 
-install_kernel() { # in a musl chroot
-    echo "Building and installing kernel ..."
+build_kernel() {
+    echo "Building kernel ..."
+    
     if [ -e "linux-stable_$kernelver" ] # not needed anymore
     then
 	asuser rm -r "linux-stable_$kernelver"
     fi
-
     if [ -e muslroot ]
     then
 	unprepare_for_musl_chroot
 	rm -r muslroot
     fi
-
     if [ -e modules ]
     then
 	rm -r modules
@@ -177,6 +172,14 @@ install_kernel() { # in a musl chroot
     chroot muslroot /root/tmp/build-kernel.sh
     unprepare_for_musl_chroot
 
+    echo "Built kernel"
+}
+
+install_kernel() { # in a musl chroot
+    echo "Installing kernel ..."
+
+    build_kernel
+
     diskfile="`cat diskfile | tr -d '\n'`"
     loopdev="`cat loopdev | tr -d '\n'`"
     mkdir -p "/mnt/$diskfile"p1
@@ -187,9 +190,10 @@ install_kernel() { # in a musl chroot
     mkdir -p /mnt/"$diskfile"p1/overlays
     cp "$kernelbuildpath/dts/overlays/"*.dtb* /mnt/"$diskfile"p1/overlays/
     cp "$kernelbuildpath/dts/overlays/README" /mnt/"$diskfile"p1/overlays/
-    cp -a "$kernelbuildpath/lib/modules" modules
+    cp -a "muslroot/lib/modules" modules
     umount "/mnt/$diskfile"p1
     rm -r "muslroot"
+    
     echo "Installed kernel"
 }
 
@@ -462,7 +466,7 @@ unprepare_for_chroot() {
     fi
     if mount | grep "$mountpoint"
     then
-	umount -R "$mountpoint"
+	umount -Rl "$mountpoint"
     fi
     sleep 1 # todo: fix this hack
     if ! df -a | grep "/dev/pts"
@@ -491,7 +495,9 @@ unprepare_for_musl_chroot() {
     fi
     if mount | grep "$mountpoint"
     then
-	umount -R "$mountpoint"
+	umount -Rl "$mountpoint/run"
+	umount -Rl "$mountpoint/sys"
+	umount -Rl "$mountpoint/proc"
     fi
     sleep 1 # todo: fix this hack
     if ! df -a | grep "/dev/pts"
