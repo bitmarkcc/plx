@@ -40,6 +40,7 @@ env-update
 . /etc/profile
 hostname plx # why doesn't it pick up the hostname from etc/hostname?
 cat /root/tmp/pw | chpasswd
+echo "guest:plx" | chpasswd
 rm /root/tmp/pw
 emerge -q1 app-admin/syslog-ng
 rc-update add syslog-ng default
@@ -83,7 +84,8 @@ then
 fi
 
 useradd -m -G users,audio -s /bin/bash guest
-sed -i 's/-a root/-a guest/' /etc/inittab
+sed -i 's/-a root //' /etc/inittab
+sed -i '0,/agetty 38400/{s/agetty 38400/agetty -a guest 38400/}' /etc/inittab
 
 emerge -q1 app-eselect/eselect-repository
 set +e
@@ -136,11 +138,10 @@ echo 'alias lock="slock physlock -l && physlock -L"' >> .bashrc
 cat /root/tmp/home/.Xresources >> .Xresources
 mkdir -p .config/openbox
 cp /root/tmp/home/.config/openbox/* .config/openbox/
-echo 'if [[ "`tty`" == "/dev/tty1" ]]' >> .bash_profile
-echo 'then' >> .bash_profile
-echo -e '\tstartx' >> .bash_profile
-echo -e '\txset dpms 0 0 600' >> .bash_profile
-echo 'fi' >> .bash_profile
+#echo 'if [[ "`tty`" == "/dev/tty1" ]]' >> .bash_profile # For security don't autostart
+#echo 'then' >> .bash_profile
+#echo -e '\tstartx' >> .bash_profile
+#echo 'fi' >> .bash_profile
 mkdir sandbox
 cd
 
@@ -151,7 +152,7 @@ rm -r /root/tmp/*.xz /root/tmp/*.gz
 rm /var/cache/distfiles/*
 echo "Generating random rootcode ..."
 rootcode="`head -c 3 /dev/random | base64 | head -c 3 | sed 's/=/_/g' | sed 's#/#-#g'`"
-echo 'export PS1="\[\e[01,35m\]'"$rootcode"'$PS1"' > /root/.bash_profile
+echo 'export PS1="\[\e[01;35m\]'"$rootcode "'$PS1"' > /root/.bash_profile
 mkdir -p /var/lib/misc
 touch /var/lib/misc/openrc-shutdowntime
 

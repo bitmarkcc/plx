@@ -196,14 +196,14 @@ install_kernel() { # in a musl chroot
 
 install_stage3() {
     echo "Installing stage3 tarball (with some modifications)..."
-    diskfile="`cat diskfile | tr -d '\n'`"
     loopdev="`cat loopdev | tr -d '\n'`"
-    mountpoint="/mnt/$diskfile"p2
-    mkdir -p "$mountpoint"
-    if ! df | grep "$mountpoint"
+    mountpoint="root"
+    if [ -e "$mountpoint" ]
     then
-	mount "$loopdev"p2 "$mountpoint"
+	unprepare_for_chroot "$mountpoint"
+	rm -r "$mountpoint"
     fi
+    mkdir -p "$mountpoint"
     if [[ "$libc" == "musl" ]]
     then
 	tar xpf "stage3-arm64-musl-$muslver.tar.xz" --xattrs-include='*.*' --numeric-owner -C "$mountpoint"
@@ -249,16 +249,19 @@ install_stage3() {
 	echo "UTC" > "$mountpoint/etc/timezone"
     fi
     cp world "$mountpoint/var/lib/portage/"
-    umount "$mountpoint"
-    echo "Installed stage3 tarball"
+    echo "Installed stage3 tarball to root/"
 }
 
 get_distfiles_and_autounmasking() {
     echo "Get distfiles and autounmasking ..."
-    prepare_for_chroot
-    diskfile="`cat diskfile | tr -d '\n'`"
+    if [ ! -e root ]
+    then
+	echo "Install stage3 tarball before getting distfiles/autounmasking"
+	exit 1
+    fi
+    prepare_for_chroot root
     loopdev="`cat loopdev | tr -d '\n'`"
-    mountpoint="/mnt/$diskfile"p2
+    mountpoint="root"
     cp fetch-autounmask.sh "$mountpoint/root/tmp"
     sed -i 's/$snapshotver/'"$snapshotver"'/' "$mountpoint/root/tmp/fetch-autounmask.sh"
     sed -i 's/$plxolver/'"$plxolver"'/' "$mountpoint/root/tmp/fetch-autounmask.sh"
@@ -694,9 +697,7 @@ main() {
     install_firmware
     install_kernel
     install_initramfs
-    clear_root_fs
     install_stage3
-    prepare_for_chroot
     get_distfiles_and_autounmasking
     clear_root_fs
     finalize_root_fs

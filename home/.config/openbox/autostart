@@ -1,3 +1,4 @@
 setxkbmap -option keypad:pointerkeys
 xkbset ma 50 40 30 100 300
+xset dpms 0 0 600
 xterm
