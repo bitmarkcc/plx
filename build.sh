@@ -270,13 +270,13 @@ get_distfiles_and_autounmasking() {
     chroot "$mountpoint" "/root/tmp/fetch-autounmask.sh"
     if [ -e distfiles ]
     then
-	rm -r distfiles
+	asuser rm -r distfiles
     fi
     asuser mkdir distfiles
     asuser cp "--preserve=mode,timestamps" "$mountpoint/var/cache/distfiles/"* distfiles/
     if [ -e portage.auto ]
     then
-	rm -r portage.auto
+	asuser rm -r portage.auto
     fi
     asuser cp -r "--preserve=mode,timestamps" "$mountpoint/etc/portage" portage.auto
     echo "Got distfiles and autounmasking"
@@ -509,6 +509,7 @@ finalize_disk_image() {
 clean() {
     echo "Cleaning PLX build files ..."
     #rm -rf "unsaferoot.tar.xz" # tmp don't delete
+    rm -rf "modules"
     asuser rm -rf "initramfs.cpio.gz"
     asuser rm -rf "linux-stable_$kernelver"
     asuser rm -rf "raspi-firmware-$firmwarever"
@@ -542,11 +543,11 @@ clean() {
     fi
     if [ -e portage.auto ]
     then
-	rm -r portage.auto
+	asuser rm -r portage.auto
     fi
     if [ -e distfiles ]
     then
-	rm -r distfiles
+	asuser rm -r distfiles
     fi
     if [ -e muslroot ]
     then
