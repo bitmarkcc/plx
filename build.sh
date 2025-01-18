@@ -10,7 +10,7 @@ stage3ver="20241230T163322Z"
 snapshotver="20250101"
 plxolver="1.1.1" # PLX overlay version
 KERNEL="kernel8" # kernel_2712 for raspi5
-installinchroot=1 # 1 if you will run install.sh in a chroot
+installinchroot=0 # 1 if you will run install.sh in a chroot
 libc="musl" # musl or glibc
 ddcount="8192" # number of MiB for the capacity of the disk image, 8 GiB by default
 
@@ -726,4 +726,4 @@ then
     fi
 fi
 
-clean
+main
