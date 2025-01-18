@@ -40,7 +40,6 @@ env-update
 . /etc/profile
 hostname plx # why doesn't it pick up the hostname from etc/hostname?
 cat /root/tmp/pw | chpasswd
-echo "guest:plx" | chpasswd
 rm /root/tmp/pw
 emerge -q1 app-admin/syslog-ng
 rc-update add syslog-ng default
@@ -84,6 +83,7 @@ then
 fi
 
 useradd -m -G users,audio -s /bin/bash guest
+echo "guest:plx" | chpasswd
 sed -i 's/-a root //' /etc/inittab
 sed -i '0,/agetty 38400/{s/agetty 38400/agetty -a guest 38400/}' /etc/inittab
 
@@ -99,7 +99,7 @@ then
 fi
 mv "plx-overlay-$plxolver" plx
 
-emerge -q --update --deep --newuse @world
+emerge --exclude 'sys-libs/musl' -q --update --deep --newuse @world
 env-update
 . /etc/profile
 emerge -q1 dev-build/libtool

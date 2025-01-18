@@ -5,9 +5,9 @@ set -e
 firmwarever="1.20241126"
 kernelver="20241008"
 busyboxver="1_36_1"
-muslver="20241230T163322Z"
+muslver="20250112T234833Z"
 stage3ver="20241230T163322Z"
-snapshotver="20250101"
+snapshotver="20250117"
 plxolver="1.1.1" # PLX overlay version
 KERNEL="kernel8" # kernel_2712 for raspi5
 installinchroot=0 # 1 if you will run install.sh in a chroot
