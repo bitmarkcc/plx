@@ -1,0 +1,2 @@
+#!/bin/bash
+setterm --blank 10 --powerdown 15 # turn off display on console after given number of minutes

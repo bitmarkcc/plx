@@ -21,8 +21,8 @@ x11-base/xorg-drivers
 #x11-libs/gtk+:2
 x11-terms/xterm # comes with X?
 x11-wm/openbox
-#x11-misc/xscreensaver
 x11-misc/slock
+app-misc/physlock
 sys-block/parted
 net-vpn/tor
 app-misc/cwallet # from plx repo
@@ -32,8 +32,9 @@ net-p2p/amule
 net-irc/irssi
 net-p2p/transmission
 app-misc/screen
-sys-apps/flatpak
+sys-apps/bubblewrap
 app-text/mupdf
 x11-apps/setxkbmap
 x11-misc/xkbset
 x11-misc/xsel
+x11-apps/xset

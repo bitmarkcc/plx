@@ -38,6 +38,7 @@ else
 fi
 env-update
 . /etc/profile
+hostname plx # why doesn't it pick up the hostname from etc/hostname?
 cat /root/tmp/pw | chpasswd
 rm /root/tmp/pw
 emerge -q1 app-admin/syslog-ng
@@ -84,7 +85,6 @@ fi
 useradd -m -G users,audio -s /bin/bash guest
 sed -i 's/-a root/-a guest/' /etc/inittab
 
-gpg --import /root/tmp/plx-pgp.asc
 emerge -q1 app-eselect/eselect-repository
 set +e
 eselect repository add plx git https://github.com/bitmarkcc/plx-overlay
@@ -95,18 +95,15 @@ if [ -e plx ]
 then
     rmdir plx
 fi
-mv plx-overlay-$plxolver plx
-cd /var/db/repos/plx/app-misc/cwallet
-gpg --verify Manifest
+mv "plx-overlay-$plxolver" plx
 
 emerge -q --update --deep --newuse @world
 env-update
 . /etc/profile
-emerge -q1 libtool
+emerge -q1 dev-build/libtool
 env-update
 . /etc/profile
-emerge --with-bdeps=n --depclean
-revdep-rebuild
+#emerge --with-bdeps=n --depclean
 env-update
 . /etc/profile
 #rc-update add NetworkManager default
@@ -130,25 +127,34 @@ do
     gpasswd -a guest $x
 done
 
+tar xpf "/root/tmp/unsaferoot.tar.xz" --xattrs-include='*.*' --numeric-owner -C /opt/
+cp "/root/tmp/unsafe/firefox" /usr/local/bin/
+
 cd /home/guest
 echo 'export XSESSION=openbox' >> .bashrc
-#echo 'alias lock="slock xset dpms 0 0 60"' >> .bashrc
+echo 'alias lock="slock physlock -l && physlock -L"' >> .bashrc
 cat /root/tmp/home/.Xresources >> .Xresources
 mkdir -p .config/openbox
 cp /root/tmp/home/.config/openbox/* .config/openbox/
 echo 'if [[ "`tty`" == "/dev/tty1" ]]' >> .bash_profile
 echo 'then' >> .bash_profile
 echo -e '\tstartx' >> .bash_profile
+echo -e '\txset dpms 0 0 600' >> .bash_profile
 echo 'fi' >> .bash_profile
-
+mkdir sandbox
 cd
+
 chown -R guest:guest /home/guest
 chmod o-rwx /home/guest
-rm -r /root/tmp/*.xz
+rm -r /root/tmp/*.xz /root/tmp/*.gz
 #sed 's|/root/tmp/install.sh||' /root/.bash_profile
-rm /root/.bash_profile # todo be general in case it is modified
+rm /var/cache/distfiles/*
+echo "Generating random rootcode ..."
+rootcode="`head -c 3 /dev/random | base64 | head -c 3 | sed 's/=/_/g' | sed 's#/#-#g'`"
+echo 'export PS1="\[\e[01,35m\]'"$rootcode"'$PS1"' > /root/.bash_profile
 mkdir -p /var/lib/misc
 touch /var/lib/misc/openrc-shutdowntime
+
 if [[ "$chroot" == "0" ]]
 then
     reboot

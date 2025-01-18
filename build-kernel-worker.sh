@@ -13,6 +13,9 @@ then
     make bcm2712_defconfig
 fi
 ./scripts/config --set-val CONFIG_FONTS y
+./scripts/config --set-val CONFIG_MAGIC_SYSRQ_DEFAULT_ENABLE 0
+./scripts/config --disable CONFIG_MAGIC_SYSRQ_SERIAL
+./scripts/config --disable CONFIG_MAGE_SYSRQ_SERIAL_SEQUENCE
 make olddefconfig
 sed 's/^# CONFIG_FONT_TER16x32 is not set/CONFIG_FONT_TER16x32=y/' .config | tee .config.tmp >> /dev/null
 sed 's/^CONFIG_FONT_8x8=y/# CONFIG_FONT_8x8 is not set/' .config.tmp | tee .config >> /dev/null

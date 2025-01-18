@@ -4,4 +4,4 @@ app-misc/cwallet ~arm64
 x11-misc/xkbset ~arm64
 net-p2p/transmission ~arm64
 dev-build/boost-m4 arm
-app-misc/physlock ~arm
+www-client/ungoogled-chromium ~arm64
