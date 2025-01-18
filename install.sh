@@ -99,7 +99,7 @@ then
 fi
 mv "plx-overlay-$plxolver" plx
 
-emerge --exclude 'sys-libs/musl' -q --update --deep --newuse @world
+emerge --exclude 'sys-libs/musl dev-libs/npth' -q --update --deep --newuse @world
 env-update
 . /etc/profile
 emerge -q1 dev-build/libtool

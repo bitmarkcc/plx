@@ -33,4 +33,4 @@ then
 fi
 mv "plx-overlay-$plxolver" plx
 
-emerge --exclude 'sys-libs/musl' -fq --update --deep --newuse --autounmask-continue @world
+emerge --exclude 'sys-libs/musl dev-libs/npth' -fq --update --deep --newuse --autounmask-continue @world
