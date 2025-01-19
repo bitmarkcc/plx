@@ -34,11 +34,9 @@ By automatically, we mean fully automated. Once you power on the Raspberry Pi wi
 
 # Installation
 
-`sudo ./build.sh`
+`sudo ./build.sh` (or download an image from plx.im/downloads)
 
 `dd if=plx<random>.img of=/dev/sdx bs=1M status=progress`
-
-# More details:
 
 # build.sh
 This is the main script that builds the system. You can easily configure some basic variables/parameters at the top. Run it as root (`sudo ./build.sh`). The parts that don't need root privileges will be run as the regular user. The first argument is the number of parallel jobs (`nproc` by default).

@@ -262,12 +262,12 @@ get_distfiles_and_autounmasking() {
     prepare_for_chroot root
     loopdev="`cat loopdev | tr -d '\n'`"
     mountpoint="root"
-    cp fetch-autounmask.sh "$mountpoint/root/tmp"
+    cp fetch-autounmask.sh "$mountpoint/root/tmp/"
     sed -i 's/$snapshotver/'"$snapshotver"'/' "$mountpoint/root/tmp/fetch-autounmask.sh"
     sed -i 's/$plxolver/'"$plxolver"'/' "$mountpoint/root/tmp/fetch-autounmask.sh"
     sed -i 's/$libc/'"$libc"'/' "$mountpoint/root/tmp/fetch-autounmask.sh"
     exclude="`cat exclude | sed 's/#.*$//' | tr '\n' ' ' | xargs | tr -d '\n'`"
-    sed -i 's/$exclude/'"$exclude"'/' "$mountpoint/root/tmp/fetch-autounmask.sh"
+    sed -i 's|$exclude|'"$exclude"'|' "$mountpoint/root/tmp/fetch-autounmask.sh"
     chmod +x "$mountpoint/root/tmp/fetch-autounmask.sh"
     chroot "$mountpoint" "/root/tmp/fetch-autounmask.sh"
     if [ -e distfiles ]
@@ -320,7 +320,7 @@ finalize_root_fs() {
     sed -i 's/$plxolver/'"$plxolver"'/g' "$mountpoint/root/tmp/install.sh"
     sed -i 's/$libc/'"$libc"'/' "$mountpoint/root/tmp/install.sh"
     exclude="`cat exclude | sed 's/#.*$//' | tr '\n' ' ' | xargs | tr -d '\n'`"
-    sed -i 's/$exclude/'"$exclude"'/' "$mountpoint/root/tmp/install.sh"
+    sed -i 's|$exclude|'"$exclude"'|' "$mountpoint/root/tmp/install.sh"
     if [[ "$installinchroot" == "1" ]]
     then
 	sed -i 's/chroot=0/chroot=1/' "$mountpoint/root/tmp/install.sh"
