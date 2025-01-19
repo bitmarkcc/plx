@@ -197,7 +197,7 @@ install_kernel() { # in a musl chroot
 install_stage3() {
     echo "Installing stage3 tarball (with some modifications)..."
     loopdev="`cat loopdev | tr -d '\n'`"
-    mountpoint="root"
+    mountpoint="mainroot"
     if [ -e "$mountpoint" ]
     then
 	unprepare_for_chroot "$mountpoint"
@@ -249,19 +249,18 @@ install_stage3() {
 	echo "UTC" > "$mountpoint/etc/timezone"
     fi
     cp world "$mountpoint/var/lib/portage/"
-    echo "Installed stage3 tarball to root/"
+    echo "Installed stage3 tarball to mainroot/"
 }
 
 get_distfiles_and_autounmasking() {
     echo "Get distfiles and autounmasking ..."
-    if [ ! -e root ]
+    if [ ! -e mainroot ]
     then
 	echo "Install stage3 tarball before getting distfiles/autounmasking"
 	exit 1
     fi
-    prepare_for_chroot root
-    loopdev="`cat loopdev | tr -d '\n'`"
-    mountpoint="root"
+    mountpoint="mainroot"
+    prepare_for_chroot "$mountpoint"
     cp fetch-autounmask.sh "$mountpoint/root/tmp/"
     sed -i 's/$snapshotver/'"$snapshotver"'/' "$mountpoint/root/tmp/fetch-autounmask.sh"
     sed -i 's/$plxolver/'"$plxolver"'/' "$mountpoint/root/tmp/fetch-autounmask.sh"
@@ -281,6 +280,7 @@ get_distfiles_and_autounmasking() {
 	asuser rm -r portage.auto
     fi
     asuser cp -r "--preserve=mode,timestamps" "$mountpoint/etc/portage" portage.auto
+    unprepare_for_chroot "$mountpoint"
     echo "Got distfiles and autounmasking"
 }
 
@@ -567,6 +567,11 @@ clean() {
     then
 	unprepare_for_chroot unsaferoot
 	rm -r unsaferoot
+    fi
+    if [ -e mainroot ]
+    then
+	unprepare_for_chroot mainroot
+	rm -r mainroot
     fi
     echo "Cleaned PLX build files"
 }
