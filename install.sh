@@ -85,7 +85,7 @@ fi
 useradd -m -G users,audio -s /bin/bash guest
 echo "guest:plx" | chpasswd
 sed -i 's/-a root //' /etc/inittab
-sed -i '0,/agetty 38400/{s/agetty 38400/agetty -a guest 38400/}' /etc/inittab
+sed -i 's/agetty 38400 tty2/agetty -a guest 38400 tty2/' /etc/inittab
 
 emerge -q1 app-eselect/eselect-repository
 set +e

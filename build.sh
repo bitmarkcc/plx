@@ -637,7 +637,7 @@ install_initramfs() {
     echo "Installed initramfs"
 }
 
-build_unsafe_packages() {
+build_unsafe_packages() { # Packages that depend on glibc or Rust. Will run with Bubblewrap.
     echo "Building unsafe packages ..."
     if [ -e unsaferoot ]
     then
@@ -692,13 +692,9 @@ build_unsafe_packages() {
     prepare_for_chroot "$mountpoint"
     chroot "$mountpoint" "/root/tmp/install.sh"
     unprepare_for_chroot "$mountpoint"
+    tar -cJf unsaferoot.tar.xz --xattrs-include='*.*' --numeric-owner unsaferoot
+    rm -r unsaferoot
     echo "Built unsafe packages"
-}
-
-install_unsafe_packages() { # Things that depend on glibc or rust. Will be run in a BubbleWrap.
-    echo "Installing unsafe packages"
-    build_unsafe_packages
-    echo "Installed unsafe packages"
 }
 
 main() {
@@ -707,6 +703,7 @@ main() {
     install_firmware
     install_kernel
     install_initramfs
+    build_unsafe_packages
     install_stage3
     get_distfiles_and_autounmasking
     clear_root_fs

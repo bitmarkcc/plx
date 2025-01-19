@@ -1,12 +1,13 @@
 #www-client/firefox X clang
 media-fonts/terminus-font X
-x11-misc/xscreensaver -jpeg
+#x11-misc/xscreensaver -jpeg
 #x11-libs/gtk+:3 X
 net-irc/irssi otr
 x11-libs/wxGTK -spell
 net-p2p/bitcoin-core -qrcode
 #app-misc/cwallet gtk
-sys-apps/flatpak X seccomp
+#sys-apps/flatpak X seccomp
 app-text/mupdf X
 x11-base/xorg-server suid
 x11-terms/xterm truetype
+x11-wm/openbox branding
