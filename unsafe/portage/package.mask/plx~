@@ -1,2 +1,0 @@
-net-libs/nodejs:0/22 # slow compilation
-dev-lang/rust-bin # we want to build from source

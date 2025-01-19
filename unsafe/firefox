@@ -3,4 +3,4 @@ root=/opt/unsaferoot
 bin=/usr/bin/firefox
 mkdir -p ~/sandbox/firefox
 cp ~/.Xauthority ~/sandbox/firefox/
-exec bwrap --ro-bind $root/usr /usr --ro-bind $root/bin /bin --ro-bind $root/lib /lib --ro-bind $root/lib64 /lib64 --ro-bind $root/sbin /sbin --ro-bind $root/etc /etc --ro-bind /etc/resolv.conf /etc/resolv.conf --proc /proc --dev /dev --tmpfs /tmp --clearenv --unshare-pid --bind ~/sandbox/firefox ~ --chdir ~ --setenv HOME "$HOME" --setenv PATH "$PATH" --setenv LANG "$LANG" --setenv TERM "$TERM" --setenv DISPLAY "$DISPLAY" --ro-bind /tmp/.X11-unix /tmp/.X11-unix "$bin" $@
+exec bwrap --ro-bind $root/usr /usr --ro-bind $root/bin /bin --ro-bind $root/lib /lib --ro-bind $root/lib64 /lib64 --ro-bind $root/sbin /sbin --ro-bind $root/etc /etc --ro-bind /etc/resolv.conf /etc/resolv.conf --proc /proc --dev /dev --tmpfs /tmp --clearenv --unshare-all --share-net --bind ~/sandbox/firefox ~ --chdir ~ --setenv HOME "$HOME" --setenv PATH "$PATH" --setenv LANG "$LANG" --setenv TERM "$TERM" --setenv DISPLAY "$DISPLAY" --ro-bind /tmp/.X11-unix /tmp/.X11-unix "$bin" $@
