@@ -737,5 +737,4 @@ then
     fi
 fi
 
-#main
-finalize_disk_image
+main
