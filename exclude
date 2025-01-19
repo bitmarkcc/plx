@@ -1,0 +1,3 @@
+# packages to exclude from emerge
+sys-libs/musl
+dev-libs/npth

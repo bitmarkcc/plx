@@ -266,6 +266,8 @@ get_distfiles_and_autounmasking() {
     sed -i 's/$snapshotver/'"$snapshotver"'/' "$mountpoint/root/tmp/fetch-autounmask.sh"
     sed -i 's/$plxolver/'"$plxolver"'/' "$mountpoint/root/tmp/fetch-autounmask.sh"
     sed -i 's/$libc/'"$libc"'/' "$mountpoint/root/tmp/fetch-autounmask.sh"
+    exclude="`cat exclude | sed 's/#.*$//' | tr '\n' ' ' | xargs | tr -d '\n'`"
+    sed -i 's/$exclude/'"$exclude"'/' "$mountpoint/root/tmp/fetch-autounmask.sh"
     chmod +x "$mountpoint/root/tmp/fetch-autounmask.sh"
     chroot "$mountpoint" "/root/tmp/fetch-autounmask.sh"
     if [ -e distfiles ]
@@ -317,6 +319,8 @@ finalize_root_fs() {
     sed -i 's/$snapshotver/'"$snapshotver"'/g' "$mountpoint/root/tmp/install.sh"
     sed -i 's/$plxolver/'"$plxolver"'/g' "$mountpoint/root/tmp/install.sh"
     sed -i 's/$libc/'"$libc"'/' "$mountpoint/root/tmp/install.sh"
+    exclude="`cat exclude | sed 's/#.*$//' | tr '\n' ' ' | xargs | tr -d '\n'`"
+    sed -i 's/$exclude/'"$exclude"'/' "$mountpoint/root/tmp/install.sh"
     if [[ "$installinchroot" == "1" ]]
     then
 	sed -i 's/chroot=0/chroot=1/' "$mountpoint/root/tmp/install.sh"
@@ -371,6 +375,11 @@ finalize_root_fs() {
     if [[ "$libc" == "glibc" ]]
     then
 	echo "UTC" > "$mountpoint/etc/timezone"
+    fi
+    if [ ! -e unsaferoot.tar.xz ]
+    then
+	echo "You must build_unsafe_packages before finalizing"
+	exit 1
     fi
     cp unsaferoot.tar.xz "$mountpoint/root/tmp/"
     mkdir "$mountpoint/root/tmp/unsafe"
@@ -728,4 +737,5 @@ then
     fi
 fi
 
-main
+#main
+finalize_disk_image

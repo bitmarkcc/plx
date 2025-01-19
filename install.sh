@@ -99,7 +99,7 @@ then
 fi
 mv "plx-overlay-$plxolver" plx
 
-emerge --exclude 'sys-libs/musl dev-libs/npth' -q --update --deep --newuse @world
+emerge --exclude "$exclude" -q --update --deep --newuse @world
 env-update
 . /etc/profile
 emerge -q1 dev-build/libtool
@@ -155,8 +155,10 @@ rootcode="`head -c 3 /dev/random | base64 | head -c 3 | sed 's/=/_/g' | sed 's#/
 echo 'export PS1="\[\e[01;35m\]'"$rootcode "'$PS1"' > /root/.bash_profile
 mkdir -p /var/lib/misc
 touch /var/lib/misc/openrc-shutdowntime
+echo "PLX Installed"
 
 if [[ "$chroot" == "0" ]]
 then
+    echo "Rebooting ..."
     reboot
 fi
