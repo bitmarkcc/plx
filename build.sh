@@ -362,6 +362,12 @@ finalize_root_fs() {
     then
 	cp portage.auto/package.use/* "$mountpoint/etc/portage/package.use/"
     fi
+    if [ -e portage.auto/repos.conf ]
+    then
+	mkdir -p "$mountpoint/etc/portage/repos.conf"
+	cp portage.auto/repos.conf/* "$mountpoint/etc/portage/repos.conf/"
+    fi
+	
     pw="$diskfile"
     echo "root:$pw" > "$mountpoint/root/tmp/pw"
     sed -i 's/^#PasswordAuthentication .*$/PasswordAuthentication no/' "$mountpoint/etc/ssh/sshd_config"
