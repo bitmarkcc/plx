@@ -33,4 +33,4 @@ then
 fi
 mv "plx-overlay-$plxolver" plx
 
-emerge --exclude -fqe --update --deep --newuse --autounmask-continue @world @installed
+emerge -fqe --update --deep --newuse --autounmask-continue @world @installed dev-build/libtool
