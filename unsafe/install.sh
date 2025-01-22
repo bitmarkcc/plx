@@ -54,4 +54,4 @@ env-update
 #rc-update delete hwclock boot #check
 rm -r /root/tmp/*.xz /root/tmp/*.xz
 #sed 's|/root/tmp/install.sh||' /root/.bash_profile
-rm /var/cache/distfiles/*
+rm -r /var/cache/distfiles/*

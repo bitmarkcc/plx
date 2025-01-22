@@ -149,7 +149,7 @@ chown -R guest:guest /home/guest
 chmod o-rwx /home/guest
 rm -r /root/tmp/*.xz /root/tmp/*.gz
 #sed 's|/root/tmp/install.sh||' /root/.bash_profile
-rm /var/cache/distfiles/*
+rm -r /var/cache/distfiles/*
 echo "Generating random rootcode ..."
 rootcode="`head -c 3 /dev/random | base64 | head -c 3 | sed 's/=/_/g' | sed 's#/#-#g'`"
 echo 'export PS1="\[\e[01;35m\]'"$rootcode "'$PS1"' > /root/.bash_profile
