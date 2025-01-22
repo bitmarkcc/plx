@@ -51,8 +51,8 @@ then
     mmc="/dev/mmcblk0"
     parted -fsa optimal "$mmc" mkpart swap linux-swap 8GiB 16GiB
     parted -sa optimal "$mmc" mkpart portage ext4 16GiB 48GiB
-    parted -sa optimal "$mmc" mkpart distfiles ext4 48GiB 64GiB
-    parted -sa optimal "$mmc" mkpart home ext4 64GiB 100%
+    parted -sa optimal "$mmc" mkpart distfiles ext4 48GiB 56GiB
+    parted -sa optimal "$mmc" mkpart home ext4 56GiB 100%
     mkswap "$mmc"p3
     mkfs.ext4 -F "$mmc"p4
     mkfs.ext4 -F "$mmc"p5
