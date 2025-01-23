@@ -1,5 +1,6 @@
 #www-client/firefox X clang
 media-fonts/terminus-font X
+media-fonts/font-adobe-75dpi X
 #x11-misc/xscreensaver -jpeg
 #x11-libs/gtk+:3 X
 net-irc/irssi otr

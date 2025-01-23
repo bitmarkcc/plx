@@ -1,6 +1,7 @@
 #app-admin/localepurge # to clear space after install. Doesn't exist anymore
 app-admin/syslog-ng
 media-fonts/terminus-font
+media-fonts/font-adobe-75dpi # otherwise vertical spacing is too large
 app-eselect/eselect-repository
 app-portage/gentoolkit
 #media-gfx/gimp # requires rust
