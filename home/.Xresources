@@ -5,3 +5,4 @@ xterm*background: black
 xterm*foreground: white
 xterm.*backarrowKey: false
 xterm*.toolBar: false
+xterm*ttyModes: erase ^?
