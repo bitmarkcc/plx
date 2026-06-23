@@ -61,3 +61,9 @@ At the end of the installation process, a 3 character code is randomly generated
 
 # screen lock
 To lock the screen simply run `lock` in an xterm or `vlock -a` in TTY/console. `lock` is an alias using a combination of `slock` and `physlock`. The monitor should automatically turn off with the `lock` command, and after 10 minutes with the `vlock -a` command. The magic sysrq key is disabled in this kernel.
+
+# Donate
+
+BTC: bc1q0795vnddk099je8pp98uqckjlwzamm5t3hdfmz
+Bitmark: bE28ZG3FpoGnyxobDFiybjJsQHUb9mLygb
+XMR: 84qp8nTgei5RrjFzXW3KP3MoFmvh8CcRUBzuGtLpRE2PNr7W3nR7KpU3vxBuRNjHhfcLe8FoXGPzDhyPQk6kHmbb6Fuu3KQ
