@@ -4,6 +4,8 @@ set -e
 
 . /etc/profile
 
+echo 'MAKEOPTS="-j'"$njobs"'"' >> /etc/portage/make.conf
+
 tar xpf /root/tmp/gentoo-"$snapshotver".tar.xz -C /var/db/repos/
 mv "/var/db/repos/gentoo-$snapshotver" /var/db/repos/gentoo
 eselect profile list

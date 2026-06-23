@@ -8,7 +8,7 @@ if [[ "$chroot" == "1" ]]
 then
     . /etc/profile
 fi
-date -s "$date"
+#date -s "$date"
 rc-update add swclock-helper default
 set +e
 rc-service swclock-helper start

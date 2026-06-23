@@ -3,11 +3,12 @@
 set -e
 
 firmwarever="1.20241126"
-kernelver="20241008"
-busyboxver="1_36_1"
-muslver="20250112T234833Z"
-stage3ver="20241230T163322Z"
-snapshotver="20250117"
+kernelver="20260527"
+muslver="20260607T234631Z" # musl stage3 tarball
+uclibcver="20181008" # uclibc stage3 tarball
+stage3ver="20260607T234631Z"
+snapshotver="20260612"
+tcsnapshotver="2018"
 plxolver="1.1.1" # PLX overlay version
 KERNEL="kernel8" # kernel_2712 for raspi5
 installinchroot=0 # 1 if you will run install.sh in a chroot
@@ -15,7 +16,37 @@ libc="musl" # musl or glibc
 ddcount="8192" # number of MiB for the capacity of the disk image, 8 GiB by default
 
 asuser() {
-    sudo -u "$user" $@
+    if [[ "`type -t "$1"`" == "function" ]]
+    then
+	FUNC="`declare -f "$1"`"
+	sudo -u "$user" bash -c "$FUNC; $*"
+    else
+	sudo -u "$user" "$@"
+    fi
+}
+
+cpP() {
+    cp -rP --preserve=mode,timestamps "$@"
+}
+
+download_files_dir() {
+    cd "$1"
+    while read -r file
+    do
+	content="${file::-7}"
+	if [ ! -f "$content" ]
+	then
+	    echo "Downloading $content ..."
+	    asuser curl -o "$content" -L "https://plx.im/gentoo/$content"
+	    echo "Downloaded $content"
+	fi
+	if ! sha512sum -c "$file"
+	then
+	    echo "Invalid hash for file $1/$file"
+	    exit 1
+	fi
+    done < <(find -maxdepth 1 -name '*.SHA512')
+    cd "$workdir"
 }
 
 download_files() {
@@ -42,26 +73,15 @@ download_files() {
 	echo "Invalid hash for kernel source ($kernelfile)"
 	exit 1
     fi
-    busyboxfile="busybox-$busyboxver.tar.gz"
-    if [ ! -f "$busyboxfile" ]
-    then
-	echo "Downloading busybox source ..."
-	asuser curl -L "https://github.com/mirror/busybox/archive/refs/tags/$busyboxver.tar.gz" -o "$busyboxfile"
-    fi
-    if ! sha512sum -c "$busyboxfile.SHA512"
-    then
-	echo "Invalid hash for busybox source ($busyboxfile)"
-	exit 1
-    fi
-    muslfile="stage3-arm64-musl-$muslver.tar.xz"
+    muslfile="stage3-arm64-musl-openrc-$muslver.tar.xz"
     if [ ! -f "$muslfile" ]
     then
-	echo "Downloading musl stage3 source ..."
+	echo "Downloading musl stage3 tarball ..."
 	asuser curl -L "https://plx.im/gentoo/$muslfile" -o "$muslfile"
     fi
     if ! sha512sum -c "$muslfile.SHA512"
     then
-	echo "Invalid hash for musl (stage3) source ($musfile)"
+	echo "Invalid hash for musl (stage3) tarball ($musfile)"
 	exit 1
     fi
     stage3file="stage3-arm64-openrc-$stage3ver.tar.xz"
@@ -73,6 +93,17 @@ download_files() {
     if ! sha512sum -c "$stage3file.SHA512"
     then
 	echo "Invalid hash for stage3 tarball ($stage3file)"
+	exit 1
+    fi
+    uclibcfile="stage3-armv7a_hardfp-uclibc-vanilla-$uclibcver.tar.bz2"
+    if [ ! -f "$uclibcfile" ]
+    then
+	echo "Downloads uclibc stage3 tarball ..."
+	asuser curl -o "$uclibcfile" -L "https://plx.im/gentoo/$uclibcfile"
+    fi
+    if ! sha512sum -c "$uclibcfile.SHA512"
+    then
+	echo "Invalid hash for uclibc stage3 tarball ($uclibcfile)"
 	exit 1
     fi
     snapshotfile="gentoo-$snapshotver.tar.xz"
@@ -97,8 +128,31 @@ download_files() {
 	echo "Invalid hash for PLX overlay file ($plxolfile)"
 	exit 1
     fi
+
+    download_toolchain_files
+    download_bootstrap_files
     
     echo "Downloaded files"
+}
+
+download_toolchain_files() {
+
+    echo "Downloading toolchain files ..."
+
+    download_files_dir toolchain/distfiles
+
+    echo "Downloaded toolchain files"
+}
+
+download_bootstrap_files() {
+
+    echo "Downloading bootstrap files ..."
+
+    download_files_dir bootstrap
+    download_files_dir bootstrap/distfiles
+
+    echo "Downloaded bootstrap files ..."
+    
 }
 
 prepare_disk_image() {
@@ -152,7 +206,7 @@ build_kernel() {
     fi
 
     mkdir muslroot
-    tar xpf "stage3-arm64-musl-$muslver.tar.xz" --xattrs-include='*.*' --numeric-owner -C "muslroot"
+    tar xpf "stage3-arm64-musl-openrc-$muslver.tar.xz" --xattrs-include='*.*' --numeric-owner -C "muslroot"
     mkdir muslroot/root/tmp
     cp build-kernel.sh muslroot/root/tmp/
     chmod +x muslroot/root/tmp/build-kernel.sh
@@ -206,7 +260,7 @@ install_stage3() {
     mkdir -p "$mountpoint"
     if [[ "$libc" == "musl" ]]
     then
-	tar xpf "stage3-arm64-musl-$muslver.tar.xz" --xattrs-include='*.*' --numeric-owner -C "$mountpoint"
+	tar xpf "stage3-arm64-musl-openrc-$muslver.tar.xz" --xattrs-include='*.*' --numeric-owner -C "$mountpoint"
     else
 	tar xpf "stage3-arm64-openrc-$stage3ver.tar.xz" --xattrs-include='*.*' --numeric-owner -C "$mountpoint"
     fi
@@ -274,12 +328,12 @@ get_distfiles_and_autounmasking() {
 	asuser rm -r distfiles
     fi
     asuser mkdir distfiles
-    asuser cp "--preserve=mode,timestamps" "$mountpoint/var/cache/distfiles/"* distfiles/
+    asuser cpP "$mountpoint/var/cache/distfiles/"* distfiles/
     if [ -e portage.auto ]
     then
 	asuser rm -r portage.auto
     fi
-    asuser cp -r "--preserve=mode,timestamps" "$mountpoint/etc/portage" portage.auto
+    asuser cpP "$mountpoint/etc/portage" portage.auto
     unprepare_for_chroot "$mountpoint"
     echo "Got distfiles and autounmasking"
 }
@@ -294,105 +348,124 @@ finalize_root_fs() {
     then
 	mount "$loopdev"p2 "$mountpoint"
     fi
-    if [[ "$libc" == "musl" ]]
-    then
-	tar xpf "stage3-arm64-musl-$stage3ver.tar.xz" --xattrs-include='*.*' --numeric-owner -C "$mountpoint"
-    else
-	tar xpf "stage3-arm64-openrc-$stage3ver.tar.xz" --xattrs-include='*.*' --numeric-owner -C "$mountpoint"
-    fi
-    cp -a modules "$mountpoint/lib/"
-    mkdir "$mountpoint/root/tmp"
+
+    cd "$mountpoint"
+    asuser zcat "$workdir"/initramfs.cpio.gz | cpio -idm --no-absolute-filenames
+    rm init
+    mkdir root/tmp
+    cpP "$workdir/bootstrap/init.sh" root/tmp/
+    sed -i 's/chroot=0/'"chroot=$installinchroot"'/' root/tmp/init.sh
+    cpP root/tmp/init.sh sbin/init
+    
+    cpP "$workdir/toolchain/build/binutils/bin/"* usr/bin/
+    cpP "$workdir/toolchain/build/gcc/bin/"* usr/bin/
+    cd usr/bin
+    ln -s gcc cc
+    cd "$mountpoint"
+    cpP "$workdir/toolchain/build/gcc/libexec/gcc" usr/libexec/
+    cpP "$workdir/toolchain/build/gcc/lib/"* usr/lib/
+    mkdir usr/include
+    cpP "$workdir/toolchain/build/include/"* usr/include/
+    cpP "$workdir/toolchain/build/gcc/include/c++/4.9.4/"* usr/lib/gcc/armv7a-unknown-linux-uclibceabihf/4.9.4/include/
+    cd usr/lib/gcc/armv7a-unknown-linux-uclibceabihf/4.9.4/include
+    mv armv7a-unknown-linux-uclibceabihf/bits/* bits/
+    mv armv7a-unknown-linux-uclibceabihf/ext/* ext/
+    cd "$mountpoint"
+    cpP "$workdir/toolchain/build/lib/"* usr/lib/
+    cpP "$workdir/toolchain/build/bin/"* usr/bin/ # for now only uclibc-ng has bins here which go in usr/bin. todo: make more general
+    cpP "$workdir/toolchain/build/sbin/"* sbin/
+    cpP "$workdir/toolchain/build/bld/"* root/bld/
+    
+    cpP "$workdir/modules" lib/
     echo 'if [[ "`tty`" == "/dev/tty1" ]]' > "$mountpoint/root/.bash_profile"
     echo 'then' >> "$mountpoint/root/.bash_profile"
     echo -e "\t/root/tmp/install.sh" >> "$mountpoint/root/.bash_profile"
     echo 'fi' >> "$mountpoint/root/.bash_profile"
-    cp cupsd.conf "$mountpoint/root/tmp/"
-    cp "--preserve=mode,timestamps" distfiles/* "$mountpoint/var/cache/distfiles/"
-    cp fstab "$mountpoint/etc/"
-    cp "gentoo-$snapshotver.tar.xz" "$mountpoint/root/tmp/"
-    cp -r home "$mountpoint/root/tmp/"
-    cp hostname "$mountpoint/etc/"
-    chmod +x init.d/*
-    cp -r "--preserve=mode" init.d/* "$mountpoint/etc/init.d/"
-    cp install.sh "$mountpoint/root/tmp/"
-    chmod +x "$mountpoint/root/tmp/install.sh"
-    sed -i 's/$snapshotver/'"$snapshotver"'/g' "$mountpoint/root/tmp/install.sh"
-    sed -i 's/$plxolver/'"$plxolver"'/g' "$mountpoint/root/tmp/install.sh"
-    sed -i 's/$libc/'"$libc"'/' "$mountpoint/root/tmp/install.sh"
-    exclude="`cat exclude | sed 's/#.*$//' | tr '\n' ' ' | xargs | tr -d '\n'`"
-    sed -i 's|$exclude|'"$exclude"'|' "$mountpoint/root/tmp/install.sh"
+    cpP "$workdir/cupsd.conf" root/tmp/
+    mkdir -p usr/portage/distfiles
+    mkdir -p var/cache/distfiles
+    cpP "$workdir/bootstrap/distfiles/"* usr/portage/distfiles/
+    mkdir root/tmp/bootstrap
+    cpP "$workdir/bootstrap/"*ash-*.sh root/tmp/bootstrap/
+    cpP "$workdir/bootstrap/vars-arm"*.sh root/tmp/bootstrap/
+    cpP "$workdir/bootstrap/arm" root/tmp/bootstrap/
+    cpP "$workdir/bootstrap/arm64" root/tmp/bootstrap/
+    cpP "$workdir/bootstrap/202"* root/tmp/bootstrap/
+    cpP "$workdir/bootstrap/gentoo-"*.tar.xz root/tmp/bootstrap/
+    cpP "$workdir/distfiles/"* var/cache/distfiles/
+    cpP "$workdir/fstab" etc/
+    cpP "$workdir/gentoo-$tcsnapshotver.tar.xz" root/tmp/
+    cpP "$workdir/gentoo-$snapshotver.tar.xz" root/tmp/
+    cpP "$workdir/home" root/tmp/
+    cpP "$workdir/hostname" etc/
+    chmod +x "$workdir/init.d/"*
+    mkdir etc/init.d
+    cpP "$workdir/init.d/"* etc/init.d/
+    cpP "$workdir/install.sh" root/tmp/
+    chmod +x root/tmp/install.sh
+    sed -i 's/$snapshotver/'"$snapshotver"'/g' root/tmp/install.sh
+    sed -i 's/$plxolver/'"$plxolver"'/g' root/tmp/install.sh
+    sed -i 's/$libc/'"$libc"'/' root/tmp/install.sh
+    exclude="`cat "$workdir/exclude" | sed 's/#.*$//' | tr '\n' ' ' | xargs | tr -d '\n'`"
+    sed -i 's|$exclude|'"$exclude"'|' root/tmp/install.sh
     if [[ "$installinchroot" == "1" ]]
     then
-	sed -i 's/chroot=0/chroot=1/' "$mountpoint/root/tmp/install.sh"
+	sed -i 's/chroot=0/'"chroot=$installinchroot"'/' root/tmp/install.sh
     fi
-    cp inittab "$mountpoint/etc/"
-    chmod +x *.start
-    cp "--preserve=mode" staticip.start "$mountpoint/etc/local.d/"
-    cp "--preserve=mode" hostname.start "$mountpoint/etc/local.d/"
-    cp "--preserve=mode" setterm.start "$mountpoint/etc/local.d/"
-    cp "plx-overlay-$plxolver.tar.gz" "$mountpoint/root/tmp/"
-    cp plx-pgp.asc "$mountpoint/root/tmp/"
-    if [ -e portage.auto/env ]
-    then
-	cp -r portage.auto/env "$mountpoint/etc/portage/"
-    fi
-    cp portage.auto/make.conf "$mountpoint/etc/portage/"
+    cpP "$workdir/inittab" etc/
+    chmod +x "$workdir/"*.start
+    mkdir etc/local.d
+    cpP "$workdir/staticip.start" etc/local.d/
+    cpP "$workdir/hostname.start" etc/local.d/
+    cpP "$workdir/setterm.start" etc/local.d/
+    cpP "$workdir/plx-overlay-$plxolver.tar.gz" root/tmp/
+    cpP "$workdir/plx-pgp.asc" root/tmp/
+
+    cpP "$workdir/toolchain/portage" etc/
+    echo 'PYTHON_TARGETS="python3_6"' >> etc/portage/make.conf
+    echo "sys-libs/uclibc-ng-1.0.30" >> etc/portage/profile/package.provided
+    echo "sys-apps/baselayout-2.4.1" >> etc/portage/profile/package.provided
+
     if [[ "$installinchroot" == "1" ]]
     then
-	sed -i 's/-march=native //' "$mountpoint/etc/portage/make.conf"
-	sed -i 's/ target-cpu=native//' "$mountpoint/etc/portage/make.conf"
+	sed -i 's/-march=native //' etc/portage/make.conf
+	sed -i 's/ target-cpu=native//' etc/portage/make.conf
     fi
-    if [ -e portage.auto/package.accept_keywords ]
-    then
-	cp portage.auto/package.accept_keywords/* "$mountpoint/etc/portage/package.accept_keywords/"
-    fi
-    if [ -e portage.auto/package.env ]
-    then
-	cp -rT portage.auto/package.env "$mountpoint/etc/portage/package.env"
-    fi
-    if [ -e portage.auto/package.license ]
-    then
-	cp -rT portage.auto/package.license "$mountpoint/etc/portage/package.license"
-    fi
-    if [ -e portage.auto/package.mask ]
-    then
-	cp portage.auto/package.mask/* "$mountpoint/etc/portage/package.mask/"
-    fi
-    if [ -e portage.auto/package.use ]
-    then
-	cp portage.auto/package.use/* "$mountpoint/etc/portage/package.use/"
-    fi
-    if [ -e portage.auto/repos.conf ]
-    then
-	mkdir -p "$mountpoint/etc/portage/repos.conf"
-	cp portage.auto/repos.conf/* "$mountpoint/etc/portage/repos.conf/"
-    fi
-	
+
+    cpP "$workdir"/toolchain/build/passwd etc/
+    cpP "$workdir"/toolchain/build/group etc/
+    
     pw="$diskfile"
-    echo "root:$pw" > "$mountpoint/root/tmp/pw"
-    sed -i 's/^#PasswordAuthentication .*$/PasswordAuthentication no/' "$mountpoint/etc/ssh/sshd_config"
-    if [ -e id_rsa.pub ]
+    echo "root:$pw" > root/tmp/pw
+
+    # sed -i 's/^#PasswordAuthentication .*$/PasswordAuthentication no/' "$mountpoint/etc/ssh/sshd_config" # add this later
+    
+    if [ -e "$workdir/id_rsa.pub" ]
     then
-	mkdir -p "$mountpoint/root/.ssh"
-	cat id_rsa.pub >> "$mountpoint/root/.ssh/authorized_keys"
+	mkdir -p root/.ssh
+	cat "$workdir/id_rsa.pub" >> root/.ssh/authorized_keys
     fi
-    cp swclock-helper.sh "$mountpoint/usr/local/bin/"
-    chmod +x "$mountpoint/usr/local/bin/swclock-helper.sh"
+    mkdir -p usr/local/bin
+    cp "$workdir/swclock-helper.sh" usr/local/bin/
+    chmod +x usr/local/bin/swclock-helper.sh
     if [[ "$libc" == "glibc" ]]
     then
-	echo "UTC" > "$mountpoint/etc/timezone"
+	echo "UTC" > etc/timezone
     fi
-    if [ ! -e unsaferoot.tar.xz ]
+    if [ ! -e "$workdir/unsaferoot.tar.xz" ]
     then
 	echo "You must build_unsafe_packages before finalizing"
 	exit 1
     fi
-    cp unsaferoot.tar.xz "$mountpoint/root/tmp/"
-    mkdir "$mountpoint/root/tmp/unsafe"
-    cp unsafe/firefox "$mountpoint/root/tmp/unsafe/"
-    cp world "$mountpoint/var/lib/portage/"
-    sed -i 's/$date/'"`date`"'/g' "$mountpoint/root/tmp/install.sh"
-    umount "$mountpoint"
+    cp "$workdir/unsaferoot.tar.xz" root/tmp/
+    mkdir root/tmp/unsafe
+    cp "$workdir/unsafe/firefox" root/tmp/unsafe/
+    mkdir -p var/lib/portage
+    cp "$workdir/world" var/lib/portage/
+    date +"%F %T" > root/tmp/lastdate
+    umount -l "$mountpoint"
+    sleep 2
+    cd "$workdir"
     echo "Finalized root filesystem"
 }
 
@@ -426,6 +499,7 @@ clear_root_fs() {
 	fi
 	set +e
     done
+    set -e
     echo "Cleared root filesystem"
 }
 
@@ -461,19 +535,32 @@ prepare_for_chroot() {
     fi
     if ! df | grep "$mountpoint/run"
     then
-	mount --bind /run "$mountpoint/run"
-	mount --make-slave "$mountpoint/run"
+	if [ -e "$mountpoint/run" ]
+	then
+	    mount --bind /run "$mountpoint/run"
+	    mount --make-slave "$mountpoint/run"
+	fi
     fi
     cp -L /etc/resolv.conf "$mountpoint/etc/"
     echo "Prepared for chroot"
 }
 
 unprepare_for_chroot() {
-    echo "Undoing chroot preparations for $1 ..."
-    mountpoint="$1"
+    echo "Undoing chroot preparations $1 ..."
+    mountpoint=""
+    if [ -z "$1" ]
+    then
+	diskfile="`cat diskfile | tr -d '\n'`"
+	loopdev="`cat loopdev | tr -d '\n'`"
+	mountpoint="/mnt/$diskfile"p2
+    else
+	mountpoint="$1"
+    fi
     if mount | grep "$mountpoint/dev"
     then
+	set +e
 	umount -l "$mountpoint"/dev{/shm,/pts,}
+	set -e
     fi
     if mount | grep "$mountpoint/run"
     then
@@ -517,7 +604,7 @@ finalize_disk_image() {
     mountpoint="/mnt/$diskfile"p2
     unprepare_for_chroot "$mountpoint"
     losetup -d "$loopdev"
-    #asuser xz -k "$diskfile"
+    asuser xz -vk5T0 "$diskfile"
     echo "Finalized disk image"
 }
 
@@ -582,48 +669,136 @@ clean() {
     echo "Cleaned PLX build files"
 }
 
-build_initramfs() { # inside a musl chroot
+build_initramfs() { # inside a uclibc chroot
 
     echo "Building initramfs ..."
 
+    if [ ! -e toolchain/build ]
+    then
+	build_toolchain
+    fi
+    
     if [ -e initramfs.cpio.gz ]
     then
 	asuser rm -r initramfs.cpio.gz
     fi
-    if [ -e initramfs ] # not needed anymore
-    then
-	asuser rm -r initramfs
-    fi
-    if [ -e "busybox-$busyboxver" ] # not needed anymore
-    then
-	asuser rm -r "busybox-$busyboxver"
-    fi
 
-    if [ -e muslroot ]
+    if [ -e uclibcroot ]
     then
-	unprepare_for_chroot muslroot
-	rm -r muslroot
+	unprepare_for_chroot uclibcroot
+	rm -r uclibcroot
     fi
     
-    mkdir muslroot
-    tar xpf "stage3-arm64-musl-$muslver.tar.xz" --xattrs-include='*.*' --numeric-owner -C "muslroot"
-    mkdir muslroot/root/tmp
-    cp build-initramfs.sh muslroot/root/tmp/
-    chmod +x muslroot/root/tmp/build-initramfs.sh
-    cp init.sh muslroot/root/tmp/
-    cp build-initramfs-worker.sh muslroot/root/tmp
-    cp "busybox-$busyboxver.tar.gz" muslroot/root/tmp/
-    sed -i 's/$busyboxver/'"$busyboxver"'/' muslroot/root/tmp/build-initramfs-worker.sh
-    sed -i 's/$njobs/'"$njobs"'/' muslroot/root/tmp/build-initramfs-worker.sh
-    prepare_for_chroot muslroot
-    chroot muslroot /root/tmp/build-initramfs.sh
-    unprepare_for_chroot muslroot
+    mkdir uclibcroot
+    tar xpf "stage3-armv7a_hardfp-uclibc-vanilla-$uclibcver.tar.bz2" --xattrs-include='*.*' --numeric-owner -C "uclibcroot"
+    mv uclibcroot/etc/portage uclibcroot/etc/portage.bak
+    cpP toolchain/portage uclibcroot/etc/
+    mkdir uclibcroot/root/tmp
+    cp "gentoo-$tcsnapshotver.tar.xz" uclibcroot/root/tmp/
+    cp "bootstrap/distfiles/busybox-1.29.0.tar.bz2" uclibcroot/root/tmp/
+    cp build-initramfs.sh uclibcroot/root/tmp/
+    chmod +x uclibcroot/root/tmp/build-initramfs.sh
+    cp init.sh uclibcroot/root/tmp/
+    cp build-initramfs-worker.sh uclibcroot/root/tmp
+    sed -i 's/$njobs/'"$njobs"'/' uclibcroot/root/tmp/build-initramfs.sh
+    sed -i 's/$tcsnapshotver/'"$tcsnapshotver"'/' uclibcroot/root/tmp/build-initramfs.sh
+    sed -i 's/$njobs/'"$njobs"'/' uclibcroot/root/tmp/build-initramfs-worker.sh
+    prepare_for_chroot uclibcroot
+    chroot uclibcroot /root/tmp/build-initramfs.sh
+    unprepare_for_chroot uclibcroot
 
-    cd muslroot/home/worker/initramfs
+    cd uclibcroot/home/worker/initramfs
     asuser find . -print0 | asuser cpio --null -ov --format=newc | asuser gzip -9 | asuser tee "$workdir/initramfs.cpio.gz" >> /dev/null
     cd "$workdir"
 
     echo "Built initramfs"
+}
+
+build_toolchain() { # inside a uclibc chroot
+
+    echo "Building toolchain ..."
+
+    if [ -e uclibcroot ]
+    then
+	unprepare_for_chroot uclibcroot
+	rm -r uclibcroot
+    fi
+
+    mkdir uclibcroot
+    tar xpf "stage3-armv7a_hardfp-uclibc-vanilla-$uclibcver.tar.bz2" --xattrs-include='*.*' --numeric-owner -C "uclibcroot"
+    mkdir uclibcroot/root/tmp
+    cp build-toolchain.sh uclibcroot/root/tmp/
+    cp build-toolchain-binutils.sh uclibcroot/root/tmp/
+    cp build-toolchain-gcc.sh uclibcroot/root/tmp/
+    cp toolchain/toolchain.eclass.patch uclibcroot/root/tmp/
+    chmod +x uclibcroot/root/tmp/build-toolchain.sh
+    cp -r toolchain/distfiles uclibcroot/root/tmp/
+    rm -r uclibcroot/root/tmp/distfiles/*.SHA512
+    mv uclibcroot/etc/portage uclibcroot/etc/portage.bak
+    cpP toolchain/portage uclibcroot/etc/
+    cp "gentoo-$tcsnapshotver.tar.xz" uclibcroot/root/tmp/
+    sed -i 's/$tcsnapshotver/'"$tcsnapshotver"'/' uclibcroot/root/tmp/build-toolchain.sh
+    sed -i 's/$njobs/'"$njobs"'/' uclibcroot/root/tmp/build-toolchain.sh
+    sed -i 's/$njobs/'"$njobs"'/' uclibcroot/root/tmp/build-toolchain-binutils.sh
+    sed -i 's/$njobs/'"$njobs"'/' uclibcroot/root/tmp/build-toolchain-gcc.sh
+    prepare_for_chroot uclibcroot
+    chroot uclibcroot /root/tmp/build-toolchain.sh
+    unprepare_for_chroot uclibcroot
+
+    # todo: parametrize versions of gcc and binutils
+    if [ -e toolchain/build ]
+    then
+	asuser rm -rf toolchain/build
+    fi
+    asuser mkdir toolchain/build
+    asuser cpP uclibcroot/home/worker/binutils/binutils-2.25.1/build toolchain/build/binutils
+    asuser cpP uclibcroot/opt/gcc toolchain/build/
+    asuser mkdir toolchain/build/include
+    #asuser cp -rP --preserve=mode,timestamps toolchain/build/gcc/lib/armv7a-unknown-linux-uclibceabihf/4.9.4/include/* toolchain/build/include/
+    while read -r file
+    do
+	filetail="`echo "$file" | sed 's|^/usr/include/||'`"
+	dirfiletail="`dirname "$filetail"`"
+	asuser mkdir -p toolchain/build/include/"$dirfiletail"
+	asuser cpP "uclibcroot$file" "toolchain/build/include/$dirfiletail"/
+    done < <(cat uclibcroot/root/tmp/include-list.txt) # assume no dirs in the list
+    asuser mkdir toolchain/build/lib
+    while read -r file
+    do
+	filetail="`echo "$file" | sed 's|^/usr/lib/||' | sed 's|^/lib/||'`"
+	dirfiletail="`dirname "$filetail"`"
+	asuser mkdir -p toolchain/build/lib/"$dirfiletail"
+	asuser cpP "uclibcroot$file" "toolchain/build/lib/$dirfiletail"/
+    done < <(cat uclibcroot/root/tmp/lib-list.txt) # assume no dirs in the list
+    while read -r file
+    do
+	filetail="`echo "$file" | sed 's|^/usr/bin/||' | sed 's|^/bin/||'`"
+	dirfiletail="`dirname "$filetail"`"
+	asuser mkdir -p toolchain/build/bin/"$dirfiletail"
+	asuser cpP "uclibcroot$file" "toolchain/build/bin/$dirfiletail"/
+    done < <(cat uclibcroot/root/tmp/bin-list.txt) # assume no dirs in the list
+    while read -r file
+    do
+	filetail="`echo "$file" | sed 's|^/sbin/||'`"
+	dirfiletail="`dirname "$filetail"`"
+	asuser mkdir -p toolchain/build/sbin/"$dirfiletail"
+	asuser cpP "uclibcroot$file" "toolchain/build/sbin/$dirfiletail"/
+    done < <(cat uclibcroot/root/tmp/sbin-list.txt) # assume no dirs in the list
+    cd toolchain/build/lib
+    rm libthread_db.so # todo make this general
+    ln -s libthread_db.so.1 libthread_db.so
+    cd "$workdir"
+    grep -e '^root:' -e '^portage:' uclibcroot/etc/passwd | asuser tee toolchain/build/passwd
+    grep -e '^root:' -e '^portage:' uclibcroot/etc/group | asuser tee toolchain/build/group
+    asuser cpP uclibcroot/usr/portage/distfiles/* bootstrap/distfiles/
+    asuser mkdir toolchain/build/bld
+    cd toolchain/build/bld
+    asuser tar -xf "$workdir/bootstrap/distfiles/make-4.2.1.tar.bz2"
+    asuser tar -xf "$workdir/bootstrap/distfiles/shadow-4.6.tar.gz"
+    asuser tar -xf "$workdir/bootstrap/distfiles/busybox-1.29.0.tar.bz2"
+    cd "$workdir"
+
+    echo "Built toolchain"
 }
 
 install_initramfs() {
@@ -632,10 +807,11 @@ install_initramfs() {
     
     build_initramfs
 
-    if [ -e muslroot ]
+    if [ -e uclibcroot ]
     then
-	rm -r muslroot
+	rm -r uclibcroot
     fi
+    
     diskfile="`cat diskfile | tr -d '\n'`"
     loopdev="`cat loopdev | tr -d '\n'`"
     mountpoint="/mnt/$diskfile"p1
@@ -710,13 +886,13 @@ build_unsafe_packages() { # Packages that depend on glibc or Rust. Will run with
 
 main() {
     download_files
-    prepare_disk_image
-    install_firmware
-    install_kernel
-    install_initramfs
-    build_unsafe_packages
-    install_stage3
-    get_distfiles_and_autounmasking
+ #   prepare_disk_image
+ #   install_firmware
+ #   install_kernel
+#    install_initramfs
+ #   build_unsafe_packages
+#    install_stage3
+#    get_distfiles_and_autounmasking
     clear_root_fs
     finalize_root_fs
     if [[ "$installinchroot" == 1 ]]
@@ -745,4 +921,12 @@ then
     fi
 fi
 
-main
+#unprepare_for_chroot
+#unprepare_for_chroot /mnt/plxIBcVh0RH.imgp2/usr/aarch64-unknown-linux-musl
+#unprepare_for_chroot unsaferoot
+#build_toolchain
+#build_initramfs
+#main
+#finalize_disk_image
+download_files
+build_unsafe_packages

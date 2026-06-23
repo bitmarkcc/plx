@@ -22,14 +22,14 @@ By automatically, we mean fully automated. Once you power on the Raspberry Pi wi
 # Prerequisites
 
 - Standard Linux toolset, core utils, C compiler, xz, tar, mount, umount, ...
-- chroot (and root access)
+- chroot, sudo
 - parted
 - cpio
-- Internet connection with /etc/resolv.conf available (to downloaded sources)
-- sudo
 - mkfs.ext4, mkfs.vfat
-- bash
+- bash >= 4
 - curl
+- lzip
+- Internet connection with /etc/resolv.conf available (to downloaded sources)
 - \>= 128 GiB micro-SD card (initially 8 GiB is written, but more partitions are added later)
 
 # Installation

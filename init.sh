@@ -27,11 +27,23 @@ echo "Successfully checked root filesystem"
 
 mkdir /mnt/root
 mount /dev/mmcblk0p2 /mnt/root || rescue_shell
+cp /bin/busybox /mnt/root/bin/
 
 umount /dev
 umount /sys
 umount /proc
 
-exec /bin/busybox switch_root /mnt/root /sbin/init
+target=aarch64-unknown-linux-musl
+rootdir=/mnt/root
+
+if [ -e /mnt/root/usr/$target ]
+then
+    rootdir=/mnt/root/usr/$target
+    mount --bind $rootdir $rootdir
+fi
+
+echo "Switching to $rootdir ..."
+
+exec /bin/busybox switch_root $rootdir /sbin/init
 
 rescue_shell

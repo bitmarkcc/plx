@@ -1,0 +1,5 @@
+sys-devel/gcc:3.4.6
+sys-devel/gcc:4.9.4
+sys-devel/binutils:2.25.1
+sys-devel/binutils:2.26.1
+sys-devel/binutils:2.28.1

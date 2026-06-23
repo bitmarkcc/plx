@@ -8,30 +8,37 @@ add_deps_to_initramfs() { # the argument is the path to the binary for which you
 }
 
 mkdir initramfs
-mkdir initramfs/root
-mkdir initramfs/etc
-mkdir initramfs/lib
-mkdir initramfs/bin
-mkdir initramfs/sbin
-mkdir -p initramfs/usr/bin
-mkdir -p initramfs/usr/sbin
-mkdir initramfs/proc
-mkdir initramfs/sys
-mkdir initramfs/dev
-mkdir initramfs/mnt
-tar -xf "tmp/busybox-$busyboxver.tar.gz"
+cd initramfs
+mkdir proc
+mkdir sys
+mkdir dev
+mkdir mnt
+mkdir tmp
+mkdir etc
+mkdir -p var/tmp
+mkdir -p root/bld
+mkdir -p usr/bin
+mkdir usr/lib
+mkdir usr/libexec
+mkdir usr/sbin
+mkdir bin
+ln -s usr/lib lib # This may need to be split into two for the bootstrap snapshot
+mkdir sbin
+cd
+
+busyboxver=1.29.0
+tar -xf "tmp/busybox-$busyboxver.tar.bz2"
 cd "busybox-$busyboxver"
 make defconfig
-sed -i 's/^CONFIG_TC=.*$/CONFIG_TC=n/' .config # tmp for recent kernels
 make -j"$njobs"
 cd ../
-add_deps_to_initramfs "$busybox-$busyboxver/busybox"
-cp "busybox-$busyboxver/busybox" initramfs/bin/
+busyboxpath="busybox-$busyboxver/busybox"
+add_deps_to_initramfs "$busyboxpath"
+cp -L "$busyboxpath" initramfs/bin/busybox
 
-fsckpath="`which e2fsck`"
+echo "fsckpath = $fsckpath"
 add_deps_to_initramfs "$fsckpath"
 cp -L "$fsckpath" initramfs/usr/bin/e2fsck
 
-rm -r "busybox-$busyboxver"
 cp tmp/init.sh initramfs/init
 chmod +x initramfs/init

@@ -11,3 +11,4 @@ app-text/mupdf X
 x11-base/xorg-server suid
 x11-terms/xterm truetype
 www-client/ungoogled-chromium X
+www-client/chromium X -screencast

@@ -1,0 +1,7 @@
+sys-devel/gcc -fortran
+dev-libs/libiconv static-libs
+dev-libs/mpc static-libs
+dev-libs/gmp static-libs
+sys-libs/zlib static-libs
+dev-libs/mpfr static-libs
+sys-devel/binutils static-libs

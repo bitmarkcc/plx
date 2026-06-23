@@ -40,18 +40,5 @@ env-update
 emerge --with-bdeps=n --depclean
 env-update
 . /etc/profile
-#rc-update add NetworkManager default
-#rc-update add alsasound boot
-#rc-update add consolekit default
-#rc-update add cupsd default
-#rc-update add lvm boot
-#rc-update add ntpd default
-#rc-update add udev sysinit
-#rc-update add udev-mount sysinit #check
-#rc-update add kmod-static-nodes sysinit #check
-#rc-update add net.lo boot #check
-#rc-update add dbus default #maybe unnecessary
-#rc-update delete hwclock boot #check
-rm -r /root/tmp/*.xz /root/tmp/*.xz
-#sed 's|/root/tmp/install.sh||' /root/.bash_profile
+rm -r /root/tmp/*.xz /root/tmp/*.gz
 rm -r /var/cache/distfiles/*

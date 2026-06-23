@@ -1,0 +1,16 @@
+--- toolchain.eclass	2025-01-31 16:00:14.574123889 +0000
++++ toolchain.eclass.mod	2025-01-31 15:54:51.438894566 +0000
+@@ -1057,8 +1057,12 @@
+ 
+ 		tc_version_is_at_least 4.2 && confgcc+=( --disable-bootstrap )
+ 	else
+-		if tc-is-static-only ; then
++		#if tc-is-static-only ; then
++		if true; then # force static for now
+ 			confgcc+=( --disable-shared )
++			confgcc+=( --disable-host-shared )
++			confgcc+=( --with-boot-ldflags=-static )
++			confgcc+=( --with-stage1-ldflags=-static )
+ 		else
+ 			confgcc+=( --enable-shared )
+ 		fi
