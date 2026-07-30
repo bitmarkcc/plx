@@ -29,6 +29,8 @@ By automatically, we mean fully automated. Once you power on the Raspberry Pi wi
 - bash >= 4
 - curl
 - lzip
+- fakeroot
+- python
 - Internet connection with /etc/resolv.conf available (to downloaded sources)
 - \>= 128 GiB micro-SD card (initially 8 GiB is written, but more partitions are added later)
 
