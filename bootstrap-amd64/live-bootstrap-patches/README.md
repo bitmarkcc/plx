@@ -127,3 +127,19 @@ that command in the chroot instead of dropping to a login shell.
 Self-gating: exits immediately if the PLX scripts aren't baked (a plain live-bootstrap run is
 unaffected), and honours an opt-out marker — `touch /mnt/amd64/.plx-no-autorun` to bake in "drop me
 straight to the shell instead".
+
+## 0005-bare-metal-target-size.patch
+
+`rootfs.py` — make **`--bare-metal` honour `--target-size`**. Upstream only converts/validates the
+image size for `--qemu` and forces it to `0` for every other mode — but `--bare-metal` *also* produces
+a disk image (`kernel_bootstrap`), so at size 0 PLX's `write_plx_sda2` aborts (*"disk (0 MiB) too
+small for sda2 at offset …"*). One-line gate change (`if args.qemu:` → `if args.qemu or
+args.bare_metal:`) so a bare-metal build gets a real 64 GiB image with the sda2 payload baked in.
+
+Used by **`make-bare-metal.sh`** (PLX repo root) — the hardware sibling of `run-qemu.sh`. It runs
+`rootfs.py --bare-metal --target-size 64G …` with the same `PLX_*` / `OFFLINE` wiring, producing
+`target/init.img` to `dd` onto a disk and boot on the real KGPE-D16 (SATA HDD preferred, or USB).
+`--bare-metal` sets `BARE_METAL=True` — the same intermediate-kernel boot path as run-qemu.sh's
+interactive mode — with `QEMU=False`; no build step reads `QEMU`, so the produced bootstrap behaves
+exactly as the validated QEMU runs. Unlike `--qemu`, `--bare-metal` does **not** boot anything: it
+just assembles the image and prints where it is.

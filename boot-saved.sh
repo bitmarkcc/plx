@@ -18,8 +18,11 @@
 
 set -e
 
-SRC="${SRC:-$HOME/git/live-bootstrap/target/init.img}"     # pristine checkpoint (never written)
-IMG="${IMG:-$HOME/git/live-bootstrap/target/work.img}"     # working copy (booted, mutated)
+thispath="`realpath "$0"`"
+thisdir="`dirname "$thispath"`"
+
+SRC="${SRC:-$thisdir/live-bootstrap/target/init.img}"     # pristine checkpoint (never written)
+IMG="${IMG:-$thisdir/live-bootstrap/target/work.img}"     # working copy (booted, mutated)
 RAM_MB="${RAM_MB:-4000}"      # guest RAM in MB
 CORES="${CORES:-4}"          # vCPUs
 CPU_MODEL="${CPU_MODEL:-}"   # e.g. Opteron_G5 (bdver2 ~ KGPE-D16); empty = QEMU default

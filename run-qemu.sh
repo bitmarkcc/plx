@@ -31,8 +31,11 @@
 #
 set -euo pipefail
 
+thispath="`realpath "$0"`"
+thisdir="`dirname "$thispath"`"
+
 # ---- configuration (override via environment) ---------------------------
-LB_DIR="${LB_DIR:-$HOME/git/live-bootstrap}"  # live-bootstrap checkout
+LB_DIR="${LB_DIR:-$thisdir/live-bootstrap}"  # live-bootstrap checkout
 CORES="${CORES:-4}"        # vCPUs AND build jobs; keep <= host core count
 RAM_MB="${RAM_MB:-4000}"   # guest RAM in MB
 DISK="${DISK:-64G}"        # target image size (accepts M/G suffix). 64G because
@@ -59,9 +62,9 @@ INTERACTIVE="${INTERACTIVE:-1}"
 #       https://github.com/fosslinux/live-bootstrap/wiki/Mirrors
 #   - a local, offline dir of pre-downloaded sources (PLX-aligned):
 #       (cd "$LB_DIR" && ./download-distfiles.sh)   # fills ./distfiles, verified
-#       MIRROR="file://$HOME/git/live-bootstrap/distfiles" ./run-qemu.sh
+#       MIRROR="file://$thisdir/live-bootstrap/distfiles" ./run-qemu.sh
 # A file:// mirror MUST be an absolute path.
-MIRROR="${MIRROR:-file:///home/ak/git/live-bootstrap/distfiles}"
+MIRROR="${MIRROR:-file:///$thisdir/live-bootstrap/distfiles}"
 
 # Optional KGPE-D16 CPU realism. rootfs.py hardcodes its QEMU arg list and
 # forces -enable-kvm, so extra flags can only be injected via a wrapper that

@@ -15,6 +15,8 @@ KERNEL="kernel8" # kernel_2712 for raspi5
 installinchroot=0 # 1 if you will run install.sh in a chroot
 libc="musl" # musl or glibc
 ddcount="8192" # number of MiB for the capacity of the disk image, 8 GiB by default
+livebootstraprepo="https://github.com/bitmarkcc/live-bootstrap"
+livebootstrapcommit="23304464faa10efa82dd1b4241b46b5c8fdccb52"
 
 asuser() {
     if [[ "`type -t "$1"`" == "function" ]]
@@ -151,9 +153,38 @@ download_bootstrap_files() {
 
     download_files_dir bootstrap
     download_files_dir bootstrap/distfiles
-    download_files_dir bootstrap-amd64/distfiles
 
     echo "Downloaded bootstrap files ..."
+    
+}
+
+download_bootstrap_amd64_files() {
+
+    echo "Downloading bootstrap amd64 files ..."
+	
+    git clone "$livebootstraprepo"
+    commit="`git rev-parse HEAD`"
+    if [[ "$commit" != "livebootstrapcommit" ]]
+    then
+	echo "Invalid commit for live-bootstrap repo"
+	exit 1
+    fi
+    
+    snapshotfile="gentoo-$snapshotver.tar.xz"
+    if [ ! -f "$snapshotfile" ]
+    then
+	echo "Downloading gentoo snapshot ..."
+	asuser curl -L "https://plx.im/gentoo/$snapshotfile" -o "$snapshotfile"
+    fi
+    if ! sha512sum -c "$snapshotfile.SHA512"
+    then
+	echo "Invalid hash for gentoo snapshot ($snapshotfile)"
+	exit 1
+    fi
+
+    download_files_dir bootstrap-amd64/distfiles
+
+    echo "Downloaded bootstrap amd64 files ..."
     
 }
 
@@ -909,6 +940,11 @@ main() {
     finalize_disk_image
 }
 
+bootstrap_amd64() {
+    download_bootstrap_amd64_files
+    prepare_disk_image_amd64
+}
+
 workdir="`pwd`"
 njobs="`nproc`"
 user="`logname`"
@@ -930,5 +966,6 @@ fi
 #build_initramfs
 #main
 #finalize_disk_image
-download_files
-build_unsafe_packages
+#download_files
+#build_unsafe_packages
+bootstrap_amd64
