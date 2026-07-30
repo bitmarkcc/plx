@@ -2,12 +2,13 @@
 
 set -e
 
+arch="amd64"
 firmwarever="1.20241126"
 kernelver="20260527"
 muslver="20260607T234631Z" # musl stage3 tarball
 uclibcver="20181008" # uclibc stage3 tarball
 stage3ver="20260607T234631Z"
-snapshotver="20260612"
+snapshotver="20260703"
 tcsnapshotver="2018"
 plxolver="1.1.1" # PLX overlay version
 KERNEL="kernel8" # kernel_2712 for raspi5
@@ -150,6 +151,7 @@ download_bootstrap_files() {
 
     download_files_dir bootstrap
     download_files_dir bootstrap/distfiles
+    download_files_dir bootstrap-amd64/distfiles
 
     echo "Downloaded bootstrap files ..."
     
