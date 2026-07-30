@@ -163,12 +163,16 @@ download_bootstrap_amd64_files() {
     echo "Downloading bootstrap amd64 files ..."
 	
     git clone "$livebootstraprepo"
+    cd live-bootstrap
     commit="`git rev-parse HEAD`"
     if [[ "$commit" != "livebootstrapcommit" ]]
     then
 	echo "Invalid commit for live-bootstrap repo"
 	exit 1
     fi
+    cd ..
+
+    download_files_dir live-bootstrap/distfiles
     
     snapshotfile="gentoo-$snapshotver.tar.xz"
     if [ ! -f "$snapshotfile" ]
@@ -203,6 +207,15 @@ prepare_disk_image() {
     echo "$diskfile" | asuser tee diskfile
     echo "$loopdev" | asuser tee loopdev
     echo "Prepared disk image"
+}
+
+prepare_disk_image_amd64() {
+    echo "Preparing AMD64 disk image ..."
+    diskid="`head -c 8 /dev/random | base64 | head -c 8 | sed 's/=/_/g' | sed 's#/#-#g'`"
+    diskfile="plx$diskid.img"
+    ./make-bare-metal.sh
+    mv live-bootstrap/target/init.img "$diskfile"
+    echo "Prepared AMD64 disk image"
 }
 
 install_firmware() {
