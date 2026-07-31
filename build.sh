@@ -16,10 +16,15 @@ installinchroot=0 # 1 if you will run install.sh in a chroot
 libc="musl" # musl or glibc
 ddcount="8192" # number of MiB for the capacity of the disk image, 8 GiB by default
 livebootstraprepo="https://github.com/bitmarkcc/live-bootstrap"
-livebootstrapcommit="23304464faa10efa82dd1b4241b46b5c8fdccb52"
+livebootstrapcommit="e7e7362bd5bd5ead8a4bb3d64789a1082f94a6b1"
+livebootstrapdistfiles="https://plx.im/live-bootstrap/"
 
 asuser() {
-    if [[ "`type -t "$1"`" == "function" ]]
+
+    if ! command -v sudo
+    then
+	"$@"
+    elif [[ "`type -t "$1"`" == "function" ]]
     then
 	FUNC="`declare -f "$1"`"
 	sudo -u "$user" bash -c "$FUNC; $*"
@@ -40,7 +45,12 @@ download_files_dir() {
 	if [ ! -f "$content" ]
 	then
 	    echo "Downloading $content ..."
-	    asuser curl -o "$content" -L "https://plx.im/gentoo/$content"
+	    if [ -z "$2" ]
+	    then
+		asuser curl -o "$content" -L "https://plx.im/distfiles/$content"
+	    else
+		asuser curl -o "$content" -L "$2$content"
+	    fi
 	    echo "Downloaded $content"
 	fi
 	if ! sha512sum -c "$file"
@@ -161,18 +171,21 @@ download_bootstrap_files() {
 download_bootstrap_amd64_files() {
 
     echo "Downloading bootstrap amd64 files ..."
-	
-    git clone "$livebootstraprepo"
+
+    if [ ! -e live-bootstrap ]
+    then
+	git clone --recursive "$livebootstraprepo"
+    fi
     cd live-bootstrap
     commit="`git rev-parse HEAD`"
-    if [[ "$commit" != "livebootstrapcommit" ]]
+    if [[ "$commit" != "$livebootstrapcommit" ]]
     then
 	echo "Invalid commit for live-bootstrap repo"
 	exit 1
     fi
     cd ..
 
-    download_files_dir live-bootstrap/distfiles
+    download_files_dir live-bootstrap/distfiles "$livebootstrapdistfiles"
     
     snapshotfile="gentoo-$snapshotver.tar.xz"
     if [ ! -f "$snapshotfile" ]
@@ -213,7 +226,7 @@ prepare_disk_image_amd64() {
     echo "Preparing AMD64 disk image ..."
     diskid="`head -c 8 /dev/random | base64 | head -c 8 | sed 's/=/_/g' | sed 's#/#-#g'`"
     diskfile="plx$diskid.img"
-    ./make-bare-metal.sh
+    DISK=56G ./make-bare-metal.sh
     mv live-bootstrap/target/init.img "$diskfile"
     echo "Prepared AMD64 disk image"
 }
