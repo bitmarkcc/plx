@@ -226,7 +226,7 @@ prepare_disk_image_amd64() {
     echo "Preparing AMD64 disk image ..."
     diskid="`head -c 8 /dev/random | base64 | head -c 8 | sed 's/=/_/g' | sed 's#/#-#g'`"
     diskfile="plx$diskid.img"
-    DISK=56G ./make-bare-metal.sh
+    DISK=56G ./make-bare-metal.sh --update-checksums
     mv live-bootstrap/target/init.img "$diskfile"
     echo "Prepared AMD64 disk image"
 }
