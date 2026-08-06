@@ -97,9 +97,9 @@ OFFLINE="${OFFLINE:-1}"
 #   PLX_DISTFILES -> sda2:/var/cache/distfiles/     (Gentoo @system source tarballs)
 #   PLX_SCRIPTS   -> sda2:/root/tmp/bootstrap-amd64/ (the PLX bootstrap scripts, minus distfiles/)
 #   PLX_SNAPSHOT  -> sda2:/root/tmp/<basename>       (the Gentoo ebuild repo snapshot)
-PLX_DISTFILES="${PLX_DISTFILES:-$HOME/git/plx/bootstrap-amd64/distfiles}"
-PLX_SCRIPTS="${PLX_SCRIPTS:-$HOME/git/plx/bootstrap-amd64}"
-PLX_SNAPSHOT="${PLX_SNAPSHOT:-$HOME/git/plx/gentoo-20260703.tar.xz}"
+PLX_DISTFILES="${PLX_DISTFILES:-$thisdir/bootstrap-amd64/distfiles}"
+PLX_SCRIPTS="${PLX_SCRIPTS:-$thisdir/bootstrap-amd64}"
+PLX_SNAPSHOT="${PLX_SNAPSHOT:-$thisdir/gentoo-20260703.tar.xz}"
 #   PLX_LB_DISTFILES -> sda2:/lb-distfiles  (live-bootstrap's OWN sources; the get_network.sh patch
 #                       binds these onto /external/distfiles for a one-disk offline build). Set
 #                       automatically under OFFLINE=1 to $LB_DIR/distfiles; empty otherwise, so a

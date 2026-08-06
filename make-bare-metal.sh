@@ -57,9 +57,9 @@ OFFLINE="${OFFLINE:-1}"
 #   PLX_DISTFILES -> sda2:/var/cache/distfiles/      (Gentoo @system source tarballs)
 #   PLX_SCRIPTS   -> sda2:/root/tmp/bootstrap-amd64/  (the PLX bootstrap scripts, minus distfiles/)
 #   PLX_SNAPSHOT  -> sda2:/root/tmp/<basename>        (the Gentoo ebuild repo snapshot)
-PLX_DISTFILES="${PLX_DISTFILES:-$HOME/git/plx/bootstrap-amd64/distfiles}"
-PLX_SCRIPTS="${PLX_SCRIPTS:-$HOME/git/plx/bootstrap-amd64}"
-PLX_SNAPSHOT="${PLX_SNAPSHOT:-$HOME/git/plx/gentoo-20260703.tar.xz}"
+PLX_DISTFILES="${PLX_DISTFILES:-$thisdir/bootstrap-amd64/distfiles}"
+PLX_SCRIPTS="${PLX_SCRIPTS:-$thisdir/bootstrap-amd64}"
+PLX_SNAPSHOT="${PLX_SNAPSHOT:-$thisdir/gentoo-20260703.tar.xz}"
 PLX_LB_DISTFILES="${PLX_LB_DISTFILES:-}"
 [ "$OFFLINE" = 1 ] && PLX_LB_DISTFILES="${PLX_LB_DISTFILES:-$LB_DIR/distfiles}"
 export PLX_DISTFILES PLX_SCRIPTS PLX_SNAPSHOT PLX_LB_DISTFILES
@@ -80,7 +80,7 @@ esac
 # aborts "disk too small". Detect the patched gate in rootfs.py.
 grep -q 'args.qemu or args.bare_metal' "$LB_DIR/rootfs.py" 2>/dev/null \
     || die "rootfs.py not patched for bare-metal sizing. Apply the PLX patches:
-  cd $LB_DIR && git apply ~/git/plx/bootstrap-amd64/live-bootstrap-patches/0005-bare-metal-target-size.patch"
+  cd $LB_DIR && git apply $thisdir/bootstrap-amd64/live-bootstrap-patches/0005-bare-metal-target-size.patch"
 
 # Pre-flight: rootfs.py does os.mkdir(target/init) with no cleanup -> a stale target/ makes it crash.
 img="$LB_DIR/target/init.img"

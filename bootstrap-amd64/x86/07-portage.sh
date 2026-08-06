@@ -157,7 +157,12 @@ echo "== [2/8] extract ebuild repo -> $repo =="
 [ -f "$snapshot" ] || { echo "MISSING $snapshot (fetch it first -- see header)"; exit 1; }
 if [ ! -d "$repo/profiles" ]; then
     mkdir -p "$(dirname "$repo")"
-    tmpd="$(mktemp -d)"
+    # Extract on the DISK fs, NOT the default /tmp (a live-bootstrap tmpfs). The ebuild repo is
+    # 100k+ tiny files; a tmpfs runs out of INODES (worse on the 32-bit kernel, whose tmpfs
+    # inode/dentry structs live in ~896MB lowmem) long before its byte space -- tar dies
+    # "No space left on device" with df showing GBs free. Putting tmpd under $repo's parent
+    # (real ext4, millions of inodes) fixes that AND makes the mv below an instant same-fs rename.
+    tmpd="$(mktemp -d -p "$(dirname "$repo")")"
     tar -xpf "$snapshot" -C "$tmpd"
     inner="$(find "$tmpd" -maxdepth 1 -mindepth 1 -type d | head -1)"   # 'portage' or 'gentoo'
     rm -rf "$repo"; mv "$inner" "$repo"; rm -rf "$tmpd"
