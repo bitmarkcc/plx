@@ -16,7 +16,7 @@ installinchroot=0 # 1 if you will run install.sh in a chroot
 libc="musl" # musl or glibc
 ddcount="8192" # number of MiB for the capacity of the disk image, 8 GiB by default
 livebootstraprepo="https://github.com/bitmarkcc/live-bootstrap"
-livebootstrapcommit="66900f7ff5ff7d0a57c27669f949700fdbc296ae"
+livebootstrapcommit="81e29cb3a797594b2be8c0597e07100fe4a28ced"
 livebootstrapdistfiles="https://plx.im/live-bootstrap/"
 
 asuser() {

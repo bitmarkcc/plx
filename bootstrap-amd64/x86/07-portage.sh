@@ -141,8 +141,13 @@ post_pkg_postinst() {
 }
 EOF
 
-grep -q '^portage:' /etc/group  || groupadd portage
-grep -q '^portage:' /etc/passwd || useradd -g portage -d /var/tmp/portage -s /bin/false portage
+# Pin portage to Gentoo's CANONICAL uid/gid 250 (acct-user/acct-group/portage). A bare useradd
+# would grab a dynamic uid (1001 here -- 'worker' from 03-find already took 1000), so the files
+# chowned to portage below (distfiles, ebuild repo) would land as uid 1001 and show up as an
+# ORPHAN numeric owner on the final amd64 system, whose portage user IS 250. Pinning 250 makes the
+# ownership match end-to-end (250 is a free system uid on the minimal i686 userland).
+grep -q '^portage:' /etc/group  || groupadd -g 250 portage
+grep -q '^portage:' /etc/passwd || useradd -u 250 -g 250 -d /var/tmp/portage -s /bin/false portage
 install -d -o portage -g portage /var/tmp/portage
 chown -R portage:portage /var/cache/distfiles
 
