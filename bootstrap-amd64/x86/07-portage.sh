@@ -197,12 +197,19 @@ mkdir -p /etc/portage/profile
 grep -qx -- '-split-usr' /etc/portage/profile/use.force 2>/dev/null || echo '-split-usr' >> /etc/portage/profile/use.force
 
 echo "== [5/8] make.conf =="
+# MAKEOPTS = -j min(nproc, 8): cap at 8, but use fewer if this host has fewer cores. The i686
+# @system build runs on the 32-bit kernel, whose ~896MB lowmem is strained just managing large RAM
+# (struct-page array). High parallelism (e.g. 32 cores -> -j32) piles on dentry/inode slab and tips
+# the kernel into a shrink_slab reclaim LIVELOCK ("negative objects to delete nr=-2147..." = 32-bit
+# shrinker-count underflow). Pairs with mem=16G baked into the intermediate 4.14 kernel cmdline
+# (keeps the 32-bit kernel in its comfort range). The amd64 (64-bit) stage has its own make.conf.
+makeoptsj=$(( j < 8 ? j : 8 ))
 cat > /etc/portage/make.conf <<EOF
 CHOST="$build"
 CFLAGS="-O2 -pipe"
 CXXFLAGS="\${CFLAGS}"
 COMMON_FLAGS="\${CFLAGS}"
-MAKEOPTS="-j$j"
+MAKEOPTS="-j$makeoptsj"
 # Relaxed for bootstrapping onto a non-Gentoo host (no sandbox binary yet, root
 # builds, overlaying files owned by the live-bootstrap userland):
 FEATURES="-sandbox -usersandbox -userpriv -ipc-sandbox -network-sandbox -pid-sandbox -protect-owned -collision-protect"
