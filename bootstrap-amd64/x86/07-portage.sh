@@ -149,6 +149,17 @@ EOF
 grep -q '^portage:' /etc/group  || groupadd -g 250 portage
 grep -q '^portage:' /etc/passwd || useradd -u 250 -g 250 -d /var/tmp/portage -s /bin/false portage
 install -d -o portage -g portage /var/tmp/portage
+# Root-own the ENTIRE baked sda2 payload first, then (next line) hand /var/cache/distfiles to
+# portage. sda2 was baked by `mkfs.ext4 -d` under fakeroot on the image-prep host, but fakeroot's
+# stat-faking can miss modern mke2fs syscalls (statx/newfstatat), leaking the prep host's uid
+# (e.g. 1001='ak') onto the baked SKELETON dirs -- /root, /var, /var/cache -- not just leaf files;
+# crossdev later fills sda2 (as root) UNDER those parents, so without this the amd64 system shows
+# /root, /var owned by 1001. /mnt/amd64 IS sda2 (mounted by live-bootstrap's get_network, reused
+# here). Must be done at THIS i686 @system stage where coreutils/chown exists -- NOT in get_network,
+# which runs right after curl BEFORE coreutils is built, where `chown` is "command not found"
+# -> exit 127 -> init (PID 1) dies -> kernel panic "Attempted to kill init". Cheap: sda2 holds only
+# the small baked payload now (the 100k-file ebuild repo lives on sda1, not here).
+[ -d /mnt/amd64 ] && chown -R 0:0 /mnt/amd64
 chown -R portage:portage /var/cache/distfiles
 
 # The portage user (fetch runs as it -- profile userfetch) must be able to reach the source-tree
