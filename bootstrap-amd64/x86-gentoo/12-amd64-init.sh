@@ -35,8 +35,8 @@ for m in /etc/portage/make.conf "$sysroot/etc/portage/make.conf"; do
     mkdir -p "$(dirname "$m")"
     grep -q '^GRUB_PLATFORMS=' "$m" 2>/dev/null || echo 'GRUB_PLATFORMS="pc"' >> "$m"
 done
-"${target}-emerge" --noreplace sys-apps/sysvinit sys-apps/openrc sys-boot/grub
-emerge --oneshot --noreplace sys-boot/grub          # i686 grub in the chroot, for grub-install
+"${target}-emerge" --noreplace -q sys-apps/sysvinit sys-apps/openrc sys-boot/grub
+emerge --oneshot --noreplace -q sys-boot/grub          # i686 grub in the chroot, for grub-install
 [ -x "$sysroot/sbin/init" ] || echo ">> WARN: $sysroot/sbin/init missing -- sysvinit not installed"
 
 echo "== [2/6] /etc/fstab =="
