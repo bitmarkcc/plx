@@ -1,6 +1,6 @@
 # PLX
 
-This is a continuation of Pirate Linux (https://gitub.com/piratelinux/Pirate-Linux) by the same developer. Yes, 10 years later. piratelinux.org is no longer under my control. It is a fake site that redirects to ad/referral schemes. The original github account, piratelinux, is also not under my control (lost password).
+This is a continuation of Pirate Linux (https://github.com/piratelinux/Pirate-Linux) by the same developer. Yes, 10 years later. piratelinux.org is no longer under my control. It is a fake site that redirects to ad/referral schemes. The original github account, piratelinux, is also not under my control (lost password).
 
 Currently designed only for Raspberry Pi, this first release _automatically_ builds a standard Gentoo desktop system, with some modifications:
 - Default console font is large and readable on high definition monitors
